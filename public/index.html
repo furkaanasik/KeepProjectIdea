@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Keep Project Idea — Analyzer</title>
+    <style>
+      :root { font-family: system-ui, sans-serif; color-scheme: light dark; }
+      body { max-width: 880px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+      h1 { margin-bottom: 0.25rem; }
+      form { display: flex; flex-direction: column; gap: 0.75rem; }
+      textarea { width: 100%; min-height: 160px; padding: 0.75rem; font: inherit; box-sizing: border-box; }
+      button { padding: 0.6rem 1rem; cursor: pointer; font: inherit; }
+      button[disabled] { opacity: 0.6; cursor: not-allowed; }
+      .loading { font-style: italic; }
+      .error { color: #b00020; padding: 0.75rem; border: 1px solid #b00020; border-radius: 4px; }
+      .results { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
+      .results section { border: 1px solid #ccc; border-radius: 6px; padding: 1rem; }
+      .results h2 { margin-top: 0; font-size: 1.1rem; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 1px solid #ddd; padding: 0.4rem 0.6rem; text-align: left; vertical-align: top; }
+      .badge { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 999px; background: #eef; font-weight: 600; }
+      pre { background: #f6f8fa; padding: 0.75rem; border-radius: 4px; overflow-x: auto; white-space: pre-wrap; }
+      .hidden { display: none; }
+    </style>
+  </head>
+  <body>
+    <h1>Keep Project Idea</h1>
+    <p>Paste your project idea and get a strategic analysis.</p>
+    <form id="analyze-form">
+      <label for="idea">Project idea</label>
+      <textarea id="idea" name="idea" maxlength="6000" required placeholder="Describe your idea (max 6000 chars)"></textarea>
+      <button id="submit-btn" type="submit">Analyze</button>
+    </form>
+    <div id="status" class="loading hidden" aria-live="polite">Analyzing…</div>
+    <div id="error" class="error hidden" role="alert"></div>
+    <div id="results" class="results"></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
