@@ -107,6 +107,49 @@ export async function submitIdea(idea, fetchImpl = fetch) {
   return { ok: res.ok, status: res.status, body };
 }
 
+export async function fetchRecentAnalyses(fetchImpl = fetch) {
+  const res = await fetchImpl('/api/analyses');
+  if (!res.ok) return [];
+  try {
+    const body = await res.json();
+    return Array.isArray(body) ? body : [];
+  } catch {
+    return [];
+  }
+}
+
+function summarizeIdea(idea, max = 60) {
+  const trimmed = String(idea ?? '').trim().replace(/\s+/g, ' ');
+  return trimmed.length > max ? `${trimmed.slice(0, max - 1)}…` : trimmed;
+}
+
+export function renderRecentList(listEl, emptyEl, records, onSelect) {
+  if (!Array.isArray(records) || records.length === 0) {
+    listEl.innerHTML = '';
+    if (emptyEl) emptyEl.classList.remove('hidden');
+    return;
+  }
+  if (emptyEl) emptyEl.classList.add('hidden');
+  listEl.innerHTML = records
+    .map(
+      (r) => `
+        <li>
+          <button type="button" data-testid="recent-item" data-id="${escapeHTML(r.id)}">
+            ${escapeHTML(summarizeIdea(r.idea))}
+            <time datetime="${escapeHTML(r.created_at)}">${escapeHTML(r.created_at)}</time>
+          </button>
+        </li>`,
+    )
+    .join('');
+
+  const buttons = listEl.querySelectorAll('button[data-testid="recent-item"]');
+  buttons.forEach((btn, idx) => {
+    btn.addEventListener('click', () => {
+      onSelect(records[idx]);
+    });
+  });
+}
+
 export function wireForm(doc) {
   const form = doc.getElementById('analyze-form');
   const textarea = doc.getElementById('idea');
@@ -114,10 +157,23 @@ export function wireForm(doc) {
   const status = doc.getElementById('status');
   const errorBox = doc.getElementById('error');
   const results = doc.getElementById('results');
+  const recentList = doc.getElementById('recent-list');
+  const recentEmpty = doc.getElementById('recent-empty');
 
   if (!form || !textarea || !submitBtn || !status || !errorBox || !results) {
     return;
   }
+
+  const refreshRecent = async () => {
+    if (!recentList) return;
+    const records = await fetchRecentAnalyses();
+    renderRecentList(recentList, recentEmpty, records, (record) => {
+      clearError(errorBox);
+      renderResult(results, record.result);
+    });
+  };
+
+  void refreshRecent();
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -134,6 +190,7 @@ export function wireForm(doc) {
         return;
       }
       renderResult(results, body);
+      void refreshRecent();
     } catch (err) {
       renderError(errorBox, err instanceof Error ? err.message : 'Network error');
     } finally {

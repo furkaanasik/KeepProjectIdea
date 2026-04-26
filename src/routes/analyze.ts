@@ -8,11 +8,13 @@ import {
   AnalyzerValidationError,
 } from '../services/analyzerService.js';
 import { ClaudeRunError } from '../services/claudeService.js';
+import type { AnalysesRepo } from '../services/analysesRepo.js';
 
 export type AnalyzeIdeaFn = (idea: string) => Promise<AnalysisResult>;
 
 export interface CreateAnalyzeRouterOptions {
   analyzeIdeaImpl?: AnalyzeIdeaFn;
+  analysesRepo?: AnalysesRepo;
 }
 
 export function createAnalyzeRouter(
@@ -21,6 +23,7 @@ export function createAnalyzeRouter(
   const router = Router();
   const impl: AnalyzeIdeaFn =
     options.analyzeIdeaImpl ?? ((idea) => analyzeIdea(idea));
+  const repo = options.analysesRepo;
 
   router.post('/', async (req, res, next) => {
     const parsed = ProjectIdeaInputSchema.safeParse(req.body);
@@ -34,6 +37,13 @@ export function createAnalyzeRouter(
 
     try {
       const result = await impl(parsed.data.idea);
+      if (repo) {
+        try {
+          repo.insert(parsed.data.idea, result);
+        } catch (err) {
+          console.error('failed to persist analysis:', err);
+        }
+      }
       res.status(200).json(result);
     } catch (err) {
       if (err instanceof AnalyzerValidationError) {

@@ -8,8 +8,12 @@ import {
   createAnalyzeRouter,
   type CreateAnalyzeRouterOptions,
 } from './routes/analyze.js';
+import { createAnalysesRouter } from './routes/analyses.js';
+import type { AnalysesRepo } from './services/analysesRepo.js';
 
-export type CreateAppOptions = CreateAnalyzeRouterOptions;
+export interface CreateAppOptions extends CreateAnalyzeRouterOptions {
+  analysesRepo?: AnalysesRepo;
+}
 
 export function createApp(options: CreateAppOptions = {}): Express {
   const app = express();
@@ -21,7 +25,17 @@ export function createApp(options: CreateAppOptions = {}): Express {
     res.status(200).json({ ok: true });
   });
 
-  app.use('/api/analyze', createAnalyzeRouter(options));
+  app.use(
+    '/api/analyze',
+    createAnalyzeRouter({
+      analyzeIdeaImpl: options.analyzeIdeaImpl,
+      analysesRepo: options.analysesRepo,
+    }),
+  );
+  app.use(
+    '/api/analyses',
+    createAnalysesRouter({ analysesRepo: options.analysesRepo }),
+  );
 
   app.use(
     (err: unknown, _req: Request, res: Response, _next: NextFunction) => {

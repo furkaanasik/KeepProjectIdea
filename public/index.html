@@ -6,7 +6,9 @@
     <title>Keep Project Idea — Analyzer</title>
     <style>
       :root { font-family: system-ui, sans-serif; color-scheme: light dark; }
-      body { max-width: 880px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+      body { max-width: 1180px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+      .layout { display: grid; grid-template-columns: 260px 1fr; gap: 1.5rem; align-items: start; }
+      @media (max-width: 720px) { .layout { grid-template-columns: 1fr; } }
       h1 { margin-bottom: 0.25rem; }
       form { display: flex; flex-direction: column; gap: 0.75rem; }
       textarea { width: 100%; min-height: 160px; padding: 0.75rem; font: inherit; box-sizing: border-box; }
@@ -22,19 +24,35 @@
       .badge { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 999px; background: #eef; font-weight: 600; }
       pre { background: #f6f8fa; padding: 0.75rem; border-radius: 4px; overflow-x: auto; white-space: pre-wrap; }
       .hidden { display: none; }
+      aside.sidebar { border: 1px solid #ddd; border-radius: 6px; padding: 0.75rem; }
+      aside.sidebar h2 { margin: 0 0 0.5rem; font-size: 1rem; }
+      aside.sidebar ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+      aside.sidebar li button { width: 100%; text-align: left; padding: 0.5rem 0.6rem; border: 1px solid #ccc; border-radius: 4px; background: transparent; cursor: pointer; }
+      aside.sidebar li button:hover { background: rgba(0,0,0,0.04); }
+      aside.sidebar .empty { color: #777; font-style: italic; font-size: 0.9rem; }
+      aside.sidebar time { display: block; font-size: 0.75rem; color: #666; margin-top: 0.15rem; }
     </style>
   </head>
   <body>
     <h1>Keep Project Idea</h1>
     <p>Paste your project idea and get a strategic analysis.</p>
-    <form id="analyze-form">
-      <label for="idea">Project idea</label>
-      <textarea id="idea" name="idea" maxlength="6000" required placeholder="Describe your idea (max 6000 chars)"></textarea>
-      <button id="submit-btn" type="submit">Analyze</button>
-    </form>
-    <div id="status" class="loading hidden" aria-live="polite">Analyzing…</div>
-    <div id="error" class="error hidden" role="alert"></div>
-    <div id="results" class="results"></div>
+    <div class="layout">
+      <aside class="sidebar" aria-label="Recent analyses">
+        <h2>Recent</h2>
+        <ul id="recent-list" data-testid="recent-list"></ul>
+        <div id="recent-empty" class="empty hidden">No analyses yet.</div>
+      </aside>
+      <main>
+        <form id="analyze-form">
+          <label for="idea">Project idea</label>
+          <textarea id="idea" name="idea" maxlength="6000" required placeholder="Describe your idea (max 6000 chars)"></textarea>
+          <button id="submit-btn" type="submit">Analyze</button>
+        </form>
+        <div id="status" class="loading hidden" aria-live="polite">Analyzing…</div>
+        <div id="error" class="error hidden" role="alert"></div>
+        <div id="results" class="results"></div>
+      </main>
+    </div>
     <script type="module" src="/app.js"></script>
   </body>
 </html>
