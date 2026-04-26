@@ -10,6 +10,7 @@ import {
 } from './routes/analyze.js';
 import { createAnalysesRouter } from './routes/analyses.js';
 import type { AnalysesRepo } from './services/analysesRepo.js';
+import { createAnalyzeLimiter } from './middleware/rateLimit.js';
 
 export interface CreateAppOptions extends CreateAnalyzeRouterOptions {
   analysesRepo?: AnalysesRepo;
@@ -17,6 +18,10 @@ export interface CreateAppOptions extends CreateAnalyzeRouterOptions {
 
 export function createApp(options: CreateAppOptions = {}): Express {
   const app = express();
+
+  if (process.env.TRUST_PROXY === '1') {
+    app.set('trust proxy', 1);
+  }
 
   app.use(express.json({ limit: '64kb' }));
   app.use(express.static('public'));
@@ -27,6 +32,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
 
   app.use(
     '/api/analyze',
+    createAnalyzeLimiter(),
     createAnalyzeRouter({
       analyzeIdeaImpl: options.analyzeIdeaImpl,
       analysesRepo: options.analysesRepo,
