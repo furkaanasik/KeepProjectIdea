@@ -1,57 +1,127 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Keep Project Idea — Analyzer</title>
-    <style>
-      :root { font-family: system-ui, sans-serif; color-scheme: light dark; }
-      body { max-width: 1180px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
-      .layout { display: grid; grid-template-columns: 260px 1fr; gap: 1.5rem; align-items: start; }
-      @media (max-width: 720px) { .layout { grid-template-columns: 1fr; } }
-      h1 { margin-bottom: 0.25rem; }
-      form { display: flex; flex-direction: column; gap: 0.75rem; }
-      textarea { width: 100%; min-height: 160px; padding: 0.75rem; font: inherit; box-sizing: border-box; }
-      button { padding: 0.6rem 1rem; cursor: pointer; font: inherit; }
-      button[disabled] { opacity: 0.6; cursor: not-allowed; }
-      .loading { font-style: italic; }
-      .error { color: #b00020; padding: 0.75rem; border: 1px solid #b00020; border-radius: 4px; }
-      .results { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
-      .results section { border: 1px solid #ccc; border-radius: 6px; padding: 1rem; }
-      .results h2 { margin-top: 0; font-size: 1.1rem; }
-      table { border-collapse: collapse; width: 100%; }
-      th, td { border: 1px solid #ddd; padding: 0.4rem 0.6rem; text-align: left; vertical-align: top; }
-      .badge { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 999px; background: #eef; font-weight: 600; }
-      pre { background: #f6f8fa; padding: 0.75rem; border-radius: 4px; overflow-x: auto; white-space: pre-wrap; }
-      .hidden { display: none; }
-      aside.sidebar { border: 1px solid #ddd; border-radius: 6px; padding: 0.75rem; }
-      aside.sidebar h2 { margin: 0 0 0.5rem; font-size: 1rem; }
-      aside.sidebar ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
-      aside.sidebar li button { width: 100%; text-align: left; padding: 0.5rem 0.6rem; border: 1px solid #ccc; border-radius: 4px; background: transparent; cursor: pointer; }
-      aside.sidebar li button:hover { background: rgba(0,0,0,0.04); }
-      aside.sidebar .empty { color: #777; font-style: italic; font-size: 0.9rem; }
-      aside.sidebar time { display: block; font-size: 0.75rem; color: #666; margin-top: 0.15rem; }
-    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'system-ui', 'sans-serif'],
+              mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+            },
+          },
+        },
+      };
+    </script>
   </head>
-  <body>
-    <h1>Keep Project Idea</h1>
-    <p>Paste your project idea and get a strategic analysis.</p>
-    <div class="layout">
-      <aside class="sidebar" aria-label="Recent analyses">
-        <h2>Recent</h2>
-        <ul id="recent-list" data-testid="recent-list"></ul>
-        <div id="recent-empty" class="empty hidden">No analyses yet.</div>
-      </aside>
-      <main>
-        <form id="analyze-form">
-          <label for="idea">Project idea</label>
-          <textarea id="idea" name="idea" maxlength="6000" required placeholder="Describe your idea (max 6000 chars)"></textarea>
-          <button id="submit-btn" type="submit">Analyze</button>
-        </form>
-        <div id="status" class="loading hidden" aria-live="polite">Analyzing…</div>
-        <div id="error" class="error hidden" role="alert"></div>
-        <div id="results" class="results"></div>
-      </main>
+  <body
+    class="min-h-screen bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-emerald-500/30"
+  >
+    <div
+      class="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_-10%,rgba(16,185,129,0.08),transparent_50%),radial-gradient(circle_at_90%_10%,rgba(99,102,241,0.08),transparent_45%)]"
+    ></div>
+
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 lg:py-14">
+      <header class="mb-10 flex flex-col gap-2">
+        <span
+          class="inline-flex w-fit items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/60 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-zinc-400"
+        >
+          <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+          Strategic analyzer
+        </span>
+        <h1
+          class="text-4xl sm:text-5xl font-bold tracking-tight bg-gradient-to-r from-zinc-50 via-zinc-200 to-zinc-500 bg-clip-text text-transparent"
+        >
+          Keep Project Idea
+        </h1>
+        <p class="text-zinc-400 max-w-xl">
+          Paste your project idea and get a strategic analysis — competitors,
+          market, viability, and a ready-to-use master prompt.
+        </p>
+      </header>
+
+      <div
+        class="grid grid-cols-1 lg:[grid-template-columns:280px_1fr] gap-6"
+      >
+        <aside
+          class="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 backdrop-blur-sm h-fit lg:sticky lg:top-6"
+          aria-label="Recent analyses"
+        >
+          <h2
+            class="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-3"
+          >
+            Recent
+          </h2>
+          <ul
+            id="recent-list"
+            data-testid="recent-list"
+            class="flex flex-col gap-2"
+          ></ul>
+          <div
+            id="recent-empty"
+            class="hidden text-sm italic text-zinc-500"
+          >
+            No analyses yet.
+          </div>
+        </aside>
+
+        <main class="flex flex-col gap-6 min-w-0">
+          <form
+            id="analyze-form"
+            class="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 backdrop-blur-sm flex flex-col gap-4"
+          >
+            <label
+              for="idea"
+              class="text-[11px] font-semibold uppercase tracking-wider text-zinc-500"
+            >
+              Project idea
+            </label>
+            <textarea
+              id="idea"
+              name="idea"
+              maxlength="6000"
+              required
+              placeholder="Describe your idea (max 6000 chars)…"
+              class="w-full min-h-[180px] rounded-xl border border-zinc-800 bg-zinc-950/60 p-4 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/30 resize-y transition"
+            ></textarea>
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+              <p class="text-xs text-zinc-500">Up to 6,000 characters.</p>
+              <button
+                id="submit-btn"
+                type="submit"
+                class="rounded-xl bg-zinc-100 px-6 py-2.5 text-sm font-semibold text-zinc-950 transition hover:bg-white hover:shadow-lg hover:shadow-zinc-100/10 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
+              >
+                Analyze
+              </button>
+            </div>
+          </form>
+
+          <div
+            id="status"
+            class="hidden rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-sm italic text-zinc-400 backdrop-blur-sm"
+            aria-live="polite"
+          >
+            Analyzing…
+          </div>
+          <div
+            id="error"
+            class="hidden rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+            role="alert"
+          ></div>
+          <div id="results"></div>
+        </main>
+      </div>
     </div>
     <script type="module" src="/app.js"></script>
   </body>

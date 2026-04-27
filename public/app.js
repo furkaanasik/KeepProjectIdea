@@ -9,54 +9,97 @@ function escapeHTML(value) {
     .replace(/'/g, '&#39;');
 }
 
+const CARD_BASE =
+  'group relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 backdrop-blur-sm transition duration-200 hover:border-zinc-700 hover:bg-zinc-900/70 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/30';
+const CARD_LABEL =
+  'text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-3';
+
 export function renderResult(container, data) {
   const competitorsRows = data.competitors
     .map(
       (c) => `
-        <tr>
-          <td>${escapeHTML(c.name)}</td>
-          <td>${escapeHTML(c.key_features)}</td>
-          <td>${escapeHTML(c.weakness)}</td>
+        <tr class="border-b border-zinc-800/60 last:border-0 transition hover:bg-zinc-800/30">
+          <td class="py-3 pr-4 align-top font-medium text-zinc-100">${escapeHTML(c.name)}</td>
+          <td class="py-3 pr-4 align-top text-zinc-300">${escapeHTML(c.key_features)}</td>
+          <td class="py-3 align-top text-zinc-400">${escapeHTML(c.weakness)}</td>
         </tr>`,
     )
     .join('');
 
   const diffItems = data.differentiation_points
-    .map((p) => `<li>${escapeHTML(p)}</li>`)
+    .map(
+      (p) =>
+        `<li class="rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-sm text-zinc-200 transition hover:border-emerald-500/40 hover:bg-zinc-900/70">${escapeHTML(p)}</li>`,
+    )
     .join('');
 
   container.innerHTML = `
-    <section data-section="summary">
-      <h2>Project Summary</h2>
-      <p>${escapeHTML(data.project_summary)}</p>
-    </section>
-    <section data-section="competitors">
-      <h2>Competitors</h2>
-      <table>
-        <thead><tr><th>Name</th><th>Key features</th><th>Weakness</th></tr></thead>
-        <tbody>${competitorsRows}</tbody>
-      </table>
-    </section>
-    <section data-section="market">
-      <h2>Market Analysis</h2>
-      <p><strong>Trends:</strong> ${escapeHTML(data.market_analysis.trends)}</p>
-      <p><strong>Target audience:</strong> ${escapeHTML(data.market_analysis.target_audience)}</p>
-    </section>
-    <section data-section="viability">
-      <h2>Viability</h2>
-      <p><span class="badge" data-testid="viability-score">${escapeHTML(data.viability.score)}</span>
-         <span data-testid="viability-status">${escapeHTML(data.viability.status)}</span></p>
-      <p>${escapeHTML(data.viability.reasoning)}</p>
-    </section>
-    <section data-section="differentiation">
-      <h2>Differentiation</h2>
-      <ul>${diffItems}</ul>
-    </section>
-    <section data-section="master-prompt">
-      <h2>Master Prompt</h2>
-      <pre data-testid="master-prompt">${escapeHTML(data.master_prompt)}</pre>
-      <button type="button" data-testid="copy-btn" id="copy-btn">Copy to clipboard</button>
-    </section>
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mt-2 grid-flow-row-dense">
+      <section data-section="summary" class="${CARD_BASE} md:col-span-4">
+        <h2 class="${CARD_LABEL}">Project Summary</h2>
+        <p class="text-base sm:text-lg leading-relaxed text-zinc-100">${escapeHTML(data.project_summary)}</p>
+      </section>
+
+      <section data-section="competitors" class="${CARD_BASE} md:col-span-6">
+        <h2 class="${CARD_LABEL}">Competitors</h2>
+        <div class="overflow-x-auto -mx-2 px-2">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="text-left text-[11px] uppercase tracking-wider text-zinc-500 border-b border-zinc-800">
+                <th class="py-2 pr-4 font-medium">Name</th>
+                <th class="py-2 pr-4 font-medium">Key features</th>
+                <th class="py-2 font-medium">Weakness</th>
+              </tr>
+            </thead>
+            <tbody>${competitorsRows}</tbody>
+          </table>
+        </div>
+      </section>
+
+      <section data-section="market" class="${CARD_BASE} md:col-span-3">
+        <h2 class="${CARD_LABEL}">Market Analysis</h2>
+        <div class="space-y-3 text-sm">
+          <div>
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">Trends</p>
+            <p class="text-zinc-200 leading-relaxed">${escapeHTML(data.market_analysis.trends)}</p>
+          </div>
+          <div>
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">Target audience</p>
+            <p class="text-zinc-200 leading-relaxed">${escapeHTML(data.market_analysis.target_audience)}</p>
+          </div>
+        </div>
+      </section>
+
+      <section data-section="viability" class="${CARD_BASE} md:col-span-2">
+        <h2 class="${CARD_LABEL}">Viability</h2>
+        <div class="flex items-baseline gap-2 mb-3">
+          <span data-testid="viability-score" class="text-5xl font-bold tabular-nums bg-gradient-to-br from-emerald-300 to-emerald-500 bg-clip-text text-transparent">${escapeHTML(data.viability.score)}</span>
+          <span class="text-sm text-zinc-500">/ 100</span>
+        </div>
+        <span data-testid="viability-status" class="inline-block rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">${escapeHTML(data.viability.status)}</span>
+        <p class="mt-3 text-sm text-zinc-300 leading-relaxed">${escapeHTML(data.viability.reasoning)}</p>
+      </section>
+
+      <section data-section="differentiation" class="${CARD_BASE} md:col-span-3">
+        <h2 class="${CARD_LABEL}">Differentiation</h2>
+        <ul class="space-y-2">${diffItems}</ul>
+      </section>
+
+      <section data-section="master-prompt" class="${CARD_BASE} md:col-span-6">
+        <div class="flex items-center justify-between gap-3 flex-wrap mb-3">
+          <h2 class="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Master Prompt</h2>
+          <button
+            type="button"
+            data-testid="copy-btn"
+            id="copy-btn"
+            class="rounded-lg border border-zinc-700 bg-zinc-800/60 px-3 py-1.5 text-xs font-medium text-zinc-200 transition hover:border-zinc-600 hover:bg-zinc-800 hover:text-white"
+          >
+            Copy to clipboard
+          </button>
+        </div>
+        <pre data-testid="master-prompt" class="rounded-xl border border-zinc-800 bg-zinc-950/80 p-4 text-xs sm:text-[13px] font-mono text-zinc-300 overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-[480px] overflow-y-auto">${escapeHTML(data.master_prompt)}</pre>
+      </section>
+    </div>
   `;
 
   const copyBtn = container.querySelector('[data-testid="copy-btn"]');
@@ -134,9 +177,14 @@ export function renderRecentList(listEl, emptyEl, records, onSelect) {
     .map(
       (r) => `
         <li>
-          <button type="button" data-testid="recent-item" data-id="${escapeHTML(r.id)}">
-            ${escapeHTML(summarizeIdea(r.idea))}
-            <time datetime="${escapeHTML(r.created_at)}">${escapeHTML(r.created_at)}</time>
+          <button
+            type="button"
+            data-testid="recent-item"
+            data-id="${escapeHTML(r.id)}"
+            class="w-full text-left rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-2 transition hover:border-zinc-700 hover:bg-zinc-800/60 group"
+          >
+            <span class="block text-sm text-zinc-200 truncate group-hover:text-white">${escapeHTML(summarizeIdea(r.idea))}</span>
+            <time datetime="${escapeHTML(r.created_at)}" class="block text-[10px] uppercase tracking-wider text-zinc-500 mt-0.5">${escapeHTML(r.created_at)}</time>
           </button>
         </li>`,
     )
