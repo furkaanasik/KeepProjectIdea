@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
     <script src="https://cdn.tailwindcss.com"></script>
@@ -20,108 +20,313 @@
               sans: ['Inter', 'system-ui', 'sans-serif'],
               mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
             },
+            keyframes: {
+              'aurora-drift': {
+                '0%, 100%': { transform: 'translate3d(0,0,0) scale(1)' },
+                '50%': { transform: 'translate3d(0,-2%,0) scale(1.05)' },
+              },
+              'pulse-soft': {
+                '0%, 100%': { opacity: '1' },
+                '50%': { opacity: '0.55' },
+              },
+            },
+            animation: {
+              'aurora-drift': 'aurora-drift 18s ease-in-out infinite',
+              'pulse-soft': 'pulse-soft 2.4s ease-in-out infinite',
+            },
           },
         },
       };
     </script>
+    <style>
+      html,
+      body {
+        background-color: #05060a;
+      }
+      .glass {
+        background: rgba(255, 255, 255, 0.025);
+        backdrop-filter: blur(18px) saturate(140%);
+        -webkit-backdrop-filter: blur(18px) saturate(140%);
+      }
+      .ring-glow {
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.06),
+          0 30px 80px -30px rgba(99, 102, 241, 0.35);
+      }
+      .gradient-border {
+        position: relative;
+      }
+      .gradient-border::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        padding: 1px;
+        border-radius: inherit;
+        background: linear-gradient(
+          135deg,
+          rgba(167, 139, 250, 0.5),
+          rgba(244, 114, 182, 0.25),
+          rgba(56, 189, 248, 0.45)
+        );
+        -webkit-mask:
+          linear-gradient(#000 0 0) content-box,
+          linear-gradient(#000 0 0);
+        mask:
+          linear-gradient(#000 0 0) content-box,
+          linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      .gradient-border:hover::before,
+      .gradient-border:focus-within::before {
+        opacity: 1;
+      }
+      .scroll-thin::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      .scroll-thin::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 999px;
+      }
+      .scroll-thin::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.16);
+      }
+    </style>
   </head>
   <body
-    class="min-h-screen bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-emerald-500/30"
+    class="min-h-screen text-zinc-100 font-sans antialiased selection:bg-fuchsia-500/30 selection:text-white"
   >
     <div
-      class="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_-10%,rgba(16,185,129,0.08),transparent_50%),radial-gradient(circle_at_90%_10%,rgba(99,102,241,0.08),transparent_45%)]"
-    ></div>
+      aria-hidden="true"
+      class="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+    >
+      <div
+        class="absolute -top-40 -left-40 h-[42rem] w-[42rem] rounded-full bg-violet-600/30 blur-[120px] animate-aurora-drift"
+      ></div>
+      <div
+        class="absolute top-20 right-[-10rem] h-[36rem] w-[36rem] rounded-full bg-fuchsia-500/20 blur-[120px] animate-aurora-drift"
+        style="animation-delay: -6s"
+      ></div>
+      <div
+        class="absolute bottom-[-12rem] left-1/3 h-[34rem] w-[34rem] rounded-full bg-cyan-500/20 blur-[120px] animate-aurora-drift"
+        style="animation-delay: -12s"
+      ></div>
+      <div
+        class="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(5,6,10,0)_0%,rgba(5,6,10,0.6)_60%,rgba(5,6,10,0.95)_100%)]"
+      ></div>
+      <div
+        class="absolute inset-0 opacity-[0.035] mix-blend-overlay"
+        style="background-image: radial-gradient(rgba(255,255,255,0.7) 1px, transparent 1px); background-size: 22px 22px;"
+      ></div>
+    </div>
 
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 lg:py-14">
-      <header class="mb-10 flex flex-col gap-2">
-        <span
-          class="inline-flex w-fit items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/60 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-zinc-400"
+    <header
+      class="sticky top-0 z-30 border-b border-white/5 glass"
+    >
+      <div
+        class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8"
+      >
+        <a href="/" class="flex items-center gap-2.5 group">
+          <span
+            class="relative inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-400 text-white shadow-lg shadow-fuchsia-500/30 transition group-hover:shadow-fuchsia-500/50"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="h-4.5 w-4.5"
+            >
+              <path d="M12 2v4" />
+              <path d="m4.93 4.93 2.83 2.83" />
+              <path d="M2 12h4" />
+              <path d="M12 18v4" />
+              <path d="m19.07 4.93-2.83 2.83" />
+              <path d="M22 12h-4" />
+              <circle cx="12" cy="12" r="4" />
+            </svg>
+          </span>
+          <div class="flex flex-col leading-tight">
+            <span
+              class="text-[13px] font-semibold tracking-tight text-zinc-100"
+              >Keep Project Idea</span
+            >
+            <span
+              class="text-[10px] font-medium uppercase tracking-[0.18em] text-zinc-500"
+              >Strategic analyzer</span
+            >
+          </div>
+        </a>
+
+        <div
+          class="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-zinc-300 sm:inline-flex"
         >
-          <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-          Strategic analyzer
+          <span class="relative flex h-2 w-2">
+            <span
+              class="absolute inline-flex h-full w-full animate-pulse-soft rounded-full bg-emerald-400 opacity-80"
+            ></span>
+            <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-400"></span>
+          </span>
+          <span class="font-medium tracking-wide">Live · Claude-powered</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-12 pb-20 lg:pt-16">
+      <section class="mb-12 max-w-3xl">
+        <span
+          class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-300"
+        >
+          <span
+            class="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-violet-400 to-fuchsia-400"
+          ></span>
+          From spark to strategy
         </span>
         <h1
-          class="text-4xl sm:text-5xl font-bold tracking-tight bg-gradient-to-r from-zinc-50 via-zinc-200 to-zinc-500 bg-clip-text text-transparent"
+          class="mt-5 text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl"
         >
-          Keep Project Idea
+          <span
+            class="bg-gradient-to-br from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent"
+            >Validate your next idea</span
+          ><br />
+          <span
+            class="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-300 bg-clip-text text-transparent"
+            >in seconds, not weeks.</span
+          >
         </h1>
-        <p class="text-zinc-400 max-w-xl">
-          Paste your project idea and get a strategic analysis — competitors,
-          market, viability, and a ready-to-use master prompt.
+        <p class="mt-5 max-w-xl text-base leading-relaxed text-zinc-400">
+          Paste a project idea and get a strategic analysis — competitors,
+          market trends, viability score, differentiation, and a
+          ready-to-ship master prompt.
         </p>
-      </header>
+      </section>
 
       <div
-        class="grid grid-cols-1 lg:[grid-template-columns:280px_1fr] gap-6"
+        class="grid grid-cols-1 lg:[grid-template-columns:300px_1fr] gap-6 lg:gap-8"
       >
         <aside
-          class="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 backdrop-blur-sm h-fit lg:sticky lg:top-6"
+          class="gradient-border h-fit rounded-2xl border border-white/10 glass p-5 lg:sticky lg:top-24"
           aria-label="Recent analyses"
         >
-          <h2
-            class="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-3"
-          >
-            Recent
-          </h2>
+          <div class="mb-4 flex items-center justify-between">
+            <h2
+              class="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-400"
+            >
+              Recent
+            </h2>
+            <span
+              class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-zinc-400"
+              id="recent-badge"
+              aria-hidden="true"
+              >history</span
+            >
+          </div>
           <ul
             id="recent-list"
             data-testid="recent-list"
-            class="flex flex-col gap-2"
+            class="flex max-h-[60vh] flex-col gap-2 overflow-y-auto scroll-thin pr-1"
           ></ul>
           <div
             id="recent-empty"
-            class="hidden text-sm italic text-zinc-500"
+            class="hidden rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-3 py-6 text-center text-xs italic text-zinc-500"
           >
-            No analyses yet.
+            No analyses yet — your runs will appear here.
           </div>
         </aside>
 
-        <main class="flex flex-col gap-6 min-w-0">
+        <main class="flex min-w-0 flex-col gap-6">
           <form
             id="analyze-form"
-            class="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 backdrop-blur-sm flex flex-col gap-4"
+            class="gradient-border ring-glow group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-white/10 glass p-6 sm:p-7"
           >
-            <label
-              for="idea"
-              class="text-[11px] font-semibold uppercase tracking-wider text-zinc-500"
-            >
-              Project idea
-            </label>
+            <div class="flex items-center justify-between gap-3">
+              <label
+                for="idea"
+                class="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-400"
+              >
+                Project idea
+              </label>
+              <span
+                class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-zinc-400"
+                >max 6,000 chars</span
+              >
+            </div>
             <textarea
               id="idea"
               name="idea"
               maxlength="6000"
               required
-              placeholder="Describe your idea (max 6000 chars)…"
-              class="w-full min-h-[180px] rounded-xl border border-zinc-800 bg-zinc-950/60 p-4 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/30 resize-y transition"
+              placeholder="e.g. An AI co-pilot that turns founder voice memos into validated product specs…"
+              class="w-full min-h-[200px] resize-y rounded-xl border border-white/10 bg-black/40 p-4 text-zinc-100 placeholder:text-zinc-600 transition focus:border-fuchsia-400/50 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/30"
             ></textarea>
             <div class="flex items-center justify-between gap-3 flex-wrap">
-              <p class="text-xs text-zinc-500">Up to 6,000 characters.</p>
+              <p class="text-xs text-zinc-500">
+                The more context you give, the sharper the output.
+              </p>
               <button
                 id="submit-btn"
                 type="submit"
-                class="rounded-xl bg-zinc-100 px-6 py-2.5 text-sm font-semibold text-zinc-950 transition hover:bg-white hover:shadow-lg hover:shadow-zinc-100/10 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
+                class="group/btn relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-400 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-fuchsia-500/25 transition hover:shadow-fuchsia-500/40 hover:saturate-150 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-fuchsia-500/25"
               >
-                Analyze
+                <span
+                  class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 group-hover/btn:translate-x-full"
+                ></span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="h-4 w-4"
+                  aria-hidden="true"
+                >
+                  <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z" />
+                </svg>
+                <span class="relative">Analyze</span>
               </button>
             </div>
           </form>
 
           <div
             id="status"
-            class="hidden rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-sm italic text-zinc-400 backdrop-blur-sm"
+            class="hidden rounded-xl border border-white/10 glass px-4 py-3 text-sm text-zinc-300"
             aria-live="polite"
           >
-            Analyzing…
+            <span class="relative inline-flex h-2.5 w-2.5 align-middle mr-2.5">
+              <span
+                class="absolute inline-flex h-full w-full animate-ping rounded-full bg-fuchsia-400 opacity-70"
+              ></span>
+              <span
+                class="relative inline-flex h-2.5 w-2.5 rounded-full bg-gradient-to-r from-violet-400 to-fuchsia-400"
+              ></span>
+            </span>
+            <span class="italic align-middle">Analyzing your idea…</span>
           </div>
           <div
             id="error"
-            class="hidden rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+            class="hidden rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200"
             role="alert"
           ></div>
           <div id="results"></div>
         </main>
       </div>
+
+      <footer
+        class="mt-16 flex flex-col items-center gap-1 text-center text-[11px] text-zinc-600"
+      >
+        <p class="tracking-wide">
+          Crafted for founders, PMs, and builders shipping fast.
+        </p>
+      </footer>
     </div>
     <script type="module" src="/app.js"></script>
   </body>
