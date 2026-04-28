@@ -76,7 +76,9 @@ describe('renderResult', () => {
 
     const lis = container.querySelectorAll('section[data-section="differentiation"] li');
     expect(lis.length).toBe(3);
-    expect(lis[0].textContent).toBe('First diff');
+    expect(lis[0].textContent).toContain('First diff');
+    expect(lis[1].textContent).toContain('Second diff');
+    expect(lis[2].textContent).toContain('Third diff');
 
     const pre = container.querySelector('[data-testid="master-prompt"]');
     expect(pre?.tagName).toBe('PRE');
