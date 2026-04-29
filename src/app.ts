@@ -9,6 +9,7 @@ import {
   type CreateAnalyzeRouterOptions,
 } from './routes/analyze.js';
 import { createAnalysesRouter } from './routes/analyses.js';
+import { createExportRouter } from './routes/export.js';
 import type { AnalysesRepo } from './services/analysesRepo.js';
 import { createAnalyzeLimiter } from './middleware/rateLimit.js';
 
@@ -42,6 +43,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
     '/api/analyses',
     createAnalysesRouter({ analysesRepo: options.analysesRepo }),
   );
+  app.use('/api/export', createExportRouter());
 
   app.use(
     (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
