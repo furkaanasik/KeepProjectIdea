@@ -8,8 +8,9 @@ The backend wraps the local `claude` CLI: it builds a Turkish strategist prompt,
 
 - `POST /api/analyze` — analyze a project idea, return strict-schema JSON.
 - `GET /api/analyses` — list recently persisted analyses.
+- `POST /api/export/pdf` — render an analysis result as a downloadable PDF report.
 - `GET /health` — liveness probe.
-- Static frontend (`public/`) for submitting ideas and browsing recent analyses.
+- Static frontend (`public/`) for submitting ideas, browsing recent analyses, and exporting a result to PDF in one click.
 - IP-based rate limiting on `/api/analyze` (default: 5 req/min).
 - SQLite persistence via `better-sqlite3` with WAL journaling.
 
@@ -20,6 +21,7 @@ The backend wraps the local `claude` CLI: it builds a Turkish strategist prompt,
 - Zod for input/output validation
 - better-sqlite3 for storage
 - express-rate-limit for throttling
+- pdfkit for PDF export
 - Vitest + Supertest + happy-dom for tests
 
 ## Requirements
@@ -94,6 +96,24 @@ Error responses:
 
 Returns the most recent persisted analyses (newest first). Each row contains the original idea and the parsed result.
 
+### `POST /api/export/pdf`
+
+Renders an `AnalysisResult` as a PDF and streams it back as `application/pdf` with a `Content-Disposition: attachment` header.
+
+Request body:
+
+```json
+{
+  "idea": "optional original idea text (≤ 6000 chars)",
+  "result": { "...": "AnalysisResult — same shape returned by POST /api/analyze" }
+}
+```
+
+Error responses:
+
+- `400 invalid_input` — body fails `ExportPdfBodySchema` (e.g. malformed `result`).
+- `500 internal_error` — unexpected server error during PDF generation.
+
 ### `GET /health`
 
 Returns `{ "ok": true }`.
@@ -107,8 +127,8 @@ src/
   db/index.ts             SQLite open/migrate/cache
   middleware/rateLimit.ts express-rate-limit factory
   prompts/                Strategist prompt template
-  routes/                 /api/analyze, /api/analyses
-  services/               claudeService, analyzerService, analysesRepo
+  routes/                 /api/analyze, /api/analyses, /api/export
+  services/               claudeService, analyzerService, analysesRepo, pdfExporter
   types/analysis.ts       Zod schemas + inferred types
 public/                   Static frontend (index.html, app.js)
 tests/                    Vitest suite
@@ -120,4 +140,4 @@ tests/                    Vitest suite
 npm test
 ```
 
-Tests cover the analyzer service, Claude CLI runner, route handlers, persistence layer, rate limiting, and a happy-dom smoke test of the frontend.
+Tests cover the analyzer service, Claude CLI runner, route handlers, persistence layer, rate limiting, the PDF exporter and `/api/export/pdf` route, and happy-dom smoke tests of the frontend (including the Export PDF flow).
