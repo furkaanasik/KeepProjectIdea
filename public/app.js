@@ -16,7 +16,8 @@ const CARD_LABEL =
 const CARD_DOT =
   '<span class="inline-block h-1.5 w-1.5 rounded-full bg-gradient-to-r from-violet-400 to-fuchsia-400"></span>';
 
-export function renderResult(container, data) {
+export function renderResult(container, data, options = {}) {
+  const idea = typeof options.idea === 'string' ? options.idea : '';
   const competitorsRows = data.competitors
     .map(
       (c) => `
@@ -42,6 +43,21 @@ export function renderResult(container, data) {
   const scorePct = Math.max(0, Math.min(100, score));
 
   container.innerHTML = `
+    <div class="mb-3 flex items-center justify-end gap-2">
+      <button
+        type="button"
+        data-testid="export-pdf-btn"
+        id="export-pdf-btn"
+        class="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-200 transition hover:border-fuchsia-400/40 hover:bg-fuchsia-500/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span data-testid="export-pdf-label">Export PDF</span>
+      </button>
+    </div>
     <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mt-2 grid-flow-row-dense">
       <section data-section="summary" class="${CARD_BASE} md:col-span-4">
         <h2 class="${CARD_LABEL}">${CARD_DOT} Project Summary</h2>
@@ -126,6 +142,30 @@ export function renderResult(container, data) {
       void navigator.clipboard.writeText(data.master_prompt);
     });
   }
+
+  const exportBtn = container.querySelector('[data-testid="export-pdf-btn"]');
+  const exportLabel = container.querySelector(
+    '[data-testid="export-pdf-label"]',
+  );
+  if (exportBtn) {
+    exportBtn.addEventListener('click', async () => {
+      exportBtn.disabled = true;
+      const previous = exportLabel ? exportLabel.textContent : null;
+      if (exportLabel) exportLabel.textContent = 'Exporting…';
+      try {
+        await exportAnalysisPdf(data, idea);
+      } catch {
+        if (exportLabel) exportLabel.textContent = 'Export failed';
+        return;
+      } finally {
+        exportBtn.disabled = false;
+        setTimeout(() => {
+          if (exportLabel && previous !== null)
+            exportLabel.textContent = previous;
+        }, 1500);
+      }
+    });
+  }
 }
 
 export function renderError(container, message) {
@@ -166,6 +206,47 @@ export async function submitIdea(idea, fetchImpl = fetch) {
     body = null;
   }
   return { ok: res.ok, status: res.status, body };
+}
+
+export function buildExportFilename(idea, generatedAt = new Date()) {
+  const stamp = generatedAt.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const slug = String(idea ?? '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+  const safe = slug.length > 0 ? slug : 'analysis';
+  return `${safe}-${stamp}.pdf`;
+}
+
+export async function exportAnalysisPdf(
+  data,
+  idea = '',
+  deps = {},
+) {
+  const fetchImpl = deps.fetchImpl ?? fetch;
+  const documentRef = deps.document ?? document;
+  const urlRef = deps.URL ?? URL;
+  const res = await fetchImpl('/api/export/pdf', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ idea, result: data }),
+  });
+  if (!res.ok) {
+    throw new Error(`export_failed_${res.status}`);
+  }
+  const blob = await res.blob();
+  const filename = buildExportFilename(idea);
+  const url = urlRef.createObjectURL(blob);
+  const a = documentRef.createElement('a');
+  a.href = url;
+  a.download = filename;
+  documentRef.body.appendChild(a);
+  a.click();
+  documentRef.body.removeChild(a);
+  urlRef.revokeObjectURL(url);
+  return { filename };
 }
 
 export async function fetchRecentAnalyses(fetchImpl = fetch) {
@@ -236,7 +317,7 @@ export function wireForm(doc) {
     const records = await fetchRecentAnalyses();
     renderRecentList(recentList, recentEmpty, records, (record) => {
       clearError(errorBox);
-      renderResult(results, record.result);
+      renderResult(results, record.result, { idea: record.idea });
     });
   };
 
@@ -256,7 +337,7 @@ export function wireForm(doc) {
         renderError(errorBox, extractErrorMessage(body));
         return;
       }
-      renderResult(results, body);
+      renderResult(results, body, { idea });
       void refreshRecent();
     } catch (err) {
       renderError(errorBox, err instanceof Error ? err.message : 'Network error');
