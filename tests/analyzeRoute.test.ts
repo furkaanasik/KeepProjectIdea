@@ -23,6 +23,10 @@ const validAnalysis: AnalysisResult = {
   },
   differentiation_points: ['First', 'Second', 'Third'],
   master_prompt: 'X'.repeat(250),
+  vc_scores: { market_fit: 8, feasibility: 7, moat: 6, scalability: 9 },
+  pain_points: ['Pain one', 'Pain two', 'Pain three'],
+  revenue_model: 'SaaS subscription with tiered pricing targeting indie founders and small teams.',
+  decision: 'KEEP',
 };
 
 describe('POST /api/analyze', () => {
@@ -82,6 +86,21 @@ describe('POST /api/analyze', () => {
 
     expect(res.status).toBe(502);
     expect(res.body).toEqual({ error: 'analyzer_unavailable' });
+  });
+
+  it('response includes vc_scores, pain_points, revenue_model, and decision fields', async () => {
+    const app = createApp({
+      analyzeIdeaImpl: async () => validAnalysis,
+    });
+    const res = await request(app)
+      .post('/api/analyze')
+      .send({ idea: 'A meaningful project idea text' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.vc_scores).toEqual(validAnalysis.vc_scores);
+    expect(res.body.pain_points).toEqual(validAnalysis.pain_points);
+    expect(res.body.revenue_model).toBe(validAnalysis.revenue_model);
+    expect(res.body.decision).toBe(validAnalysis.decision);
   });
 
   it('returns 500 via central error handler for unexpected errors', async () => {
