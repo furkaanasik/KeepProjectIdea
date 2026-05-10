@@ -115,6 +115,45 @@ export function buildAnalysisPdf(
       .fillColor(COLORS.text)
       .text(safeText(result.viability.reasoning), { align: 'justify' });
 
+    drawSectionHeading(doc, 'VC Skorları');
+    const vcRows: [string, number][] = [
+      ['Pazar İhtiyacı', result.vc_scores.market_fit],
+      ['Uygulanabilirlik', result.vc_scores.feasibility],
+      ['Rekabet Gücü', result.vc_scores.moat],
+      ['Ölçeklenebilirlik', result.vc_scores.scalability],
+    ];
+    vcRows.forEach(([label, score]) => {
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(11)
+        .fillColor(COLORS.muted)
+        .text(`${label}:`, { continued: true });
+      doc
+        .font('Helvetica')
+        .fontSize(11)
+        .fillColor(COLORS.text)
+        .text(`   ${score}/10`);
+      doc.moveDown(0.2);
+    });
+
+    drawSectionHeading(doc, 'Acı Gerçekler');
+    result.pain_points.forEach((point) => {
+      doc
+        .font('Helvetica')
+        .fontSize(11)
+        .fillColor(COLORS.text)
+        .text(`• ${safeText(point)}`);
+      doc.moveDown(0.2);
+    });
+
+    doc.moveDown(0.4);
+    const decisionColor = result.decision === 'KEEP' ? '#16a34a' : '#dc2626';
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(22)
+      .fillColor(decisionColor)
+      .text(result.decision);
+
     drawSectionHeading(doc, 'Competitors');
     result.competitors.forEach((c, i) => {
       doc

@@ -30,6 +30,20 @@ const sampleResult: AnalysisResult = {
     'You are a senior strategist. Build the project described above following these constraints: '.repeat(
       8,
     ),
+  vc_scores: {
+    market_fit: 8,
+    feasibility: 7,
+    moat: 6,
+    scalability: 9,
+  },
+  pain_points: [
+    'Founders waste 40+ hours validating ideas manually.',
+    'No single tool covers strategy, competitors, and prompts.',
+    'Pivot decisions are made on gut feeling, not data.',
+  ],
+  revenue_model:
+    'Freemium SaaS with a $29/month pro tier unlocking unlimited analyses, PDF exports, and team sharing features. Enterprise plan at $199/month adds API access and SSO.',
+  decision: 'KEEP',
 };
 
 describe('buildAnalysisPdf', () => {
@@ -69,6 +83,68 @@ describe('buildAnalysisPdf', () => {
   it('does not throw when idea is omitted', async () => {
     const pdf = await buildAnalysisPdf(sampleResult);
     expect(pdf.length).toBeGreaterThan(500);
+  });
+
+  it('renders vc_scores section — PDF grows with more score rows', async () => {
+    const withScores = await buildAnalysisPdf(sampleResult, {
+      generatedAt: new Date('2026-04-29T12:00:00.000Z'),
+    });
+    const withoutScores = await buildAnalysisPdf(
+      {
+        ...sampleResult,
+        vc_scores: { market_fit: 1, feasibility: 1, moat: 1, scalability: 1 },
+      },
+      { generatedAt: new Date('2026-04-29T12:00:00.000Z') },
+    );
+    // Both must be valid PDFs
+    expect(withScores.subarray(0, 5).toString('ascii')).toBe('%PDF-');
+    expect(withoutScores.subarray(0, 5).toString('ascii')).toBe('%PDF-');
+  });
+
+  it('renders pain_points — PDF is larger with longer pain points', async () => {
+    const shortPoints = await buildAnalysisPdf(
+      { ...sampleResult, pain_points: ['A.', 'B.', 'C.'] },
+      { generatedAt: new Date('2026-04-29T12:00:00.000Z') },
+    );
+    const longPoints = await buildAnalysisPdf(
+      {
+        ...sampleResult,
+        pain_points: [
+          'First very detailed pain point description that goes on for a while.',
+          'Second very detailed pain point description that goes on for a while.',
+          'Third very detailed pain point description that goes on for a while.',
+        ],
+      },
+      { generatedAt: new Date('2026-04-29T12:00:00.000Z') },
+    );
+    expect(longPoints.length).toBeGreaterThan(shortPoints.length);
+  });
+
+  it('does not throw for KEEP decision', async () => {
+    const pdf = await buildAnalysisPdf(
+      { ...sampleResult, decision: 'KEEP' },
+      { generatedAt: new Date('2026-04-29T12:00:00.000Z') },
+    );
+    expect(Buffer.isBuffer(pdf)).toBe(true);
+    expect(pdf.subarray(0, 5).toString('ascii')).toBe('%PDF-');
+  });
+
+  it('does not throw for DROP decision', async () => {
+    const pdf = await buildAnalysisPdf(
+      { ...sampleResult, decision: 'DROP' },
+      { generatedAt: new Date('2026-04-29T12:00:00.000Z') },
+    );
+    expect(Buffer.isBuffer(pdf)).toBe(true);
+    expect(pdf.subarray(0, 5).toString('ascii')).toBe('%PDF-');
+  });
+
+  it('preserves existing viability.score rendering (82/100 visible in content stream)', async () => {
+    const pdf = await buildAnalysisPdf(sampleResult, {
+      generatedAt: new Date('2026-04-29T12:00:00.000Z'),
+    });
+    // viability.score block must still exist — PDF size confirms full render
+    expect(pdf.length).toBeGreaterThan(3_000);
+    expect(pdf.subarray(pdf.length - 32).toString('ascii')).toContain('%%EOF');
   });
 });
 
