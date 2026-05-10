@@ -19,7 +19,7 @@ const validAnalysis = {
     target_audience: 'Indie founders and PMs.',
   },
   viability: {
-    score: 85,
+    score: 75,
     status: 'Yapmaya Değer',
     reasoning: 'Strong demand, modest competition.',
   },
@@ -97,7 +97,7 @@ describe('analyzeIdea', () => {
       runClaudeImpl: fakeRunClaude(wrapped),
     });
     expect(out).toEqual(validAnalysis);
-    expect(out.viability.score).toBe(85);
+    expect(out.viability.score).toBe(75);
   });
 
   it('handles JSON with trailing truncation after the closing brace', async () => {
@@ -158,5 +158,72 @@ describe('analyzeIdea', () => {
     expect(calls[0]!.outputFormat).toBe('json');
     expect(calls[0]!.prompt).toContain('A solid idea');
     expect(calls[0]!.prompt).toContain('Rakip Analizi');
+  });
+
+  it('sets decision=KEEP when vc_scores avg >= 7', async () => {
+    // market_fit:8, feasibility:7, moat:6, scalability:9 → avg=7.5
+    const out = await analyzeIdea('A solid idea', {
+      runClaudeImpl: fakeRunClaude(JSON.stringify(validAnalysis)),
+    });
+    expect(out.decision).toBe('KEEP');
+  });
+
+  it('sets decision=DROP when vc_scores avg < 7', async () => {
+    const lowScores = {
+      ...validAnalysis,
+      vc_scores: { market_fit: 5, feasibility: 5, moat: 6, scalability: 6 },
+      decision: 'KEEP' as const,
+    };
+    const out = await analyzeIdea('A solid idea', {
+      runClaudeImpl: fakeRunClaude(JSON.stringify(lowScores)),
+    });
+    expect(out.decision).toBe('DROP');
+  });
+
+  it('derives viability.score as Math.round(avg * 10)', async () => {
+    // avg = (8+7+6+9)/4 = 7.5 → score = 75
+    const out = await analyzeIdea('A solid idea', {
+      runClaudeImpl: fakeRunClaude(JSON.stringify(validAnalysis)),
+    });
+    expect(out.viability.score).toBe(75);
+  });
+
+  it('overrides Claude-supplied decision with vc_scores derived value', async () => {
+    const mismatch = { ...validAnalysis, decision: 'DROP' as const };
+    const out = await analyzeIdea('A solid idea', {
+      runClaudeImpl: fakeRunClaude(JSON.stringify(mismatch)),
+    });
+    expect(out.decision).toBe('KEEP');
+  });
+
+  it('throws AnalyzerValidationError when vc_scores is missing', async () => {
+    const { vc_scores: _omit, ...noVcScores } = validAnalysis;
+    let caught: unknown;
+    try {
+      await analyzeIdea('A solid idea', {
+        runClaudeImpl: fakeRunClaude(JSON.stringify(noVcScores)),
+      });
+    } catch (err) {
+      caught = err;
+    }
+    expect(caught).toBeInstanceOf(AnalyzerValidationError);
+    expect((caught as AnalyzerValidationError).issues.length).toBeGreaterThan(0);
+  });
+
+  it('throws AnalyzerValidationError when a vc_scores axis is missing', async () => {
+    const partialVc = {
+      ...validAnalysis,
+      vc_scores: { market_fit: 8, feasibility: 7, moat: 6 },
+    };
+    let caught: unknown;
+    try {
+      await analyzeIdea('A solid idea', {
+        runClaudeImpl: fakeRunClaude(JSON.stringify(partialVc)),
+      });
+    } catch (err) {
+      caught = err;
+    }
+    expect(caught).toBeInstanceOf(AnalyzerValidationError);
+    expect((caught as AnalyzerValidationError).issues.length).toBeGreaterThan(0);
   });
 });
