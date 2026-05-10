@@ -22,6 +22,10 @@ const validFixture = {
   },
   differentiation_points: ['First', 'Second', 'Third'],
   master_prompt: 'X'.repeat(200),
+  vc_scores: { market_fit: 8, feasibility: 7, moat: 6, scalability: 9 },
+  pain_points: ['Truth one', 'Truth two', 'Truth three'],
+  revenue_model: 'S'.repeat(50),
+  decision: 'KEEP' as const,
 };
 
 describe('AnalysisResultSchema', () => {
@@ -72,6 +76,62 @@ describe('AnalysisResultSchema', () => {
       ...validFixture,
       viability: { ...validFixture.viability, score: 50.5 },
     };
+    expect(() => AnalysisResultSchema.parse(bad)).toThrow();
+  });
+});
+
+describe('VcScores', () => {
+  it('rejects vc_scores value below 1', () => {
+    const bad = { ...validFixture, vc_scores: { ...validFixture.vc_scores, market_fit: 0 } };
+    expect(() => AnalysisResultSchema.parse(bad)).toThrow();
+  });
+
+  it('rejects vc_scores value above 10', () => {
+    const bad = { ...validFixture, vc_scores: { ...validFixture.vc_scores, moat: 11 } };
+    expect(() => AnalysisResultSchema.parse(bad)).toThrow();
+  });
+
+  it('rejects non-integer vc_scores', () => {
+    const bad = { ...validFixture, vc_scores: { ...validFixture.vc_scores, scalability: 7.5 } };
+    expect(() => AnalysisResultSchema.parse(bad)).toThrow();
+  });
+});
+
+describe('pain_points', () => {
+  it('rejects fewer than 3 pain_points', () => {
+    const bad = { ...validFixture, pain_points: ['Only one', 'Only two'] };
+    expect(() => AnalysisResultSchema.parse(bad)).toThrow();
+  });
+
+  it('rejects more than 3 pain_points', () => {
+    const bad = { ...validFixture, pain_points: ['A', 'B', 'C', 'D'] };
+    expect(() => AnalysisResultSchema.parse(bad)).toThrow();
+  });
+});
+
+describe('revenue_model', () => {
+  it('rejects revenue_model shorter than 50 chars', () => {
+    const bad = { ...validFixture, revenue_model: 'too short' };
+    expect(() => AnalysisResultSchema.parse(bad)).toThrow();
+  });
+
+  it('accepts revenue_model of exactly 50 chars', () => {
+    const ok = { ...validFixture, revenue_model: 'X'.repeat(50) };
+    expect(() => AnalysisResultSchema.parse(ok)).not.toThrow();
+  });
+});
+
+describe('decision', () => {
+  it('accepts KEEP', () => {
+    expect(() => AnalysisResultSchema.parse({ ...validFixture, decision: 'KEEP' })).not.toThrow();
+  });
+
+  it('accepts DROP', () => {
+    expect(() => AnalysisResultSchema.parse({ ...validFixture, decision: 'DROP' })).not.toThrow();
+  });
+
+  it('rejects unknown decision value', () => {
+    const bad = { ...validFixture, decision: 'MAYBE' };
     expect(() => AnalysisResultSchema.parse(bad)).toThrow();
   });
 });

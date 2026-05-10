@@ -23,6 +23,13 @@ const ViabilitySchema = z
   })
   .strict();
 
+const VcScoresSchema = z.object({
+  market_fit: z.number().int().min(1).max(10),
+  feasibility: z.number().int().min(1).max(10),
+  moat: z.number().int().min(1).max(10),
+  scalability: z.number().int().min(1).max(10),
+});
+
 export const AnalysisResultSchema = z
   .object({
     project_summary: z.string().min(10),
@@ -31,6 +38,10 @@ export const AnalysisResultSchema = z
     viability: ViabilitySchema,
     differentiation_points: z.array(z.string()).length(3),
     master_prompt: z.string().min(200),
+    vc_scores: VcScoresSchema,
+    pain_points: z.array(z.string()).length(3),
+    revenue_model: z.string().min(50),
+    decision: z.enum(['KEEP', 'DROP']),
   })
   .strict();
 
