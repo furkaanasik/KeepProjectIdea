@@ -14,6 +14,10 @@ const buildResult = (overrides: Partial<AnalysisResult> = {}): AnalysisResult =>
   viability: { score: 80, status: 'good', reasoning: 'because' },
   differentiation_points: ['one', 'two', 'three'],
   master_prompt: 'M'.repeat(220),
+  vc_scores: { market_fit: 7, feasibility: 8, moat: 5, scalability: 6 },
+  pain_points: ['Pain alpha', 'Pain beta', 'Pain gamma'],
+  revenue_model: 'Freemium model with paid tiers for advanced features and team collaboration.',
+  decision: 'KEEP',
   ...overrides,
 });
 
@@ -55,6 +59,16 @@ describe('analysesRepo', () => {
 
     const records = repo.listRecent();
     expect(records.map((r) => r.idea)).toEqual(['third', 'second', 'first']);
+  });
+
+  it('persists and retrieves vc_scores, pain_points, revenue_model, and decision', () => {
+    const result = buildResult({ decision: 'DROP' });
+    repo.insert('idea', result);
+    const [record] = repo.listRecent(1);
+    expect(record.result.vc_scores).toEqual({ market_fit: 7, feasibility: 8, moat: 5, scalability: 6 });
+    expect(record.result.pain_points).toEqual(['Pain alpha', 'Pain beta', 'Pain gamma']);
+    expect(record.result.revenue_model).toBe('Freemium model with paid tiers for advanced features and team collaboration.');
+    expect(record.result.decision).toBe('DROP');
   });
 
   it('listRecent respects limit (default 20)', () => {
