@@ -117,5 +117,11 @@ export async function analyzeIdea(
       validated.error.issues,
     );
   }
-  return validated.data;
+
+  const data = validated.data;
+  const s = data.vc_scores;
+  const avg = (s.market_fit + s.feasibility + s.moat + s.scalability) / 4;
+  data.decision = avg >= 7 ? 'KEEP' : 'DROP';
+  data.viability = { ...data.viability, score: Math.round(avg * 10) };
+  return data;
 }
