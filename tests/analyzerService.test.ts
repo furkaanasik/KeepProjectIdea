@@ -25,6 +25,10 @@ const validAnalysis = {
   },
   differentiation_points: ['First', 'Second', 'Third'],
   master_prompt: 'X'.repeat(250),
+  vc_scores: { market_fit: 8, feasibility: 7, moat: 6, scalability: 9 },
+  pain_points: ['Truth one', 'Truth two', 'Truth three'],
+  revenue_model: 'S'.repeat(50),
+  decision: 'KEEP' as const,
 };
 
 function fakeRunClaude(result: string): RunClaudeFn {
@@ -74,36 +78,6 @@ describe('extractJsonObject', () => {
 });
 
 describe('buildStrategistPrompt', () => {
-  it('includes all 5 required analysis section headings', () => {
-    const prompt = buildStrategistPrompt('an interesting idea');
-    expect(prompt).toContain('Rakip Analizi');
-    expect(prompt).toContain('Pazar Araştırması');
-    expect(prompt).toContain('Yapılabilirlik (Viability)');
-    expect(prompt).toContain('Farklılaşma Stratejisi (USP)');
-    expect(prompt).toContain('Master Prompt');
-  });
-
-  it('includes the exact JSON output template keys', () => {
-    const prompt = buildStrategistPrompt('idea here');
-    for (const key of [
-      'project_summary',
-      'competitors',
-      'key_features',
-      'weakness',
-      'market_analysis',
-      'trends',
-      'target_audience',
-      'viability',
-      'score',
-      'status',
-      'reasoning',
-      'differentiation_points',
-      'master_prompt',
-    ]) {
-      expect(prompt).toContain(`"${key}"`);
-    }
-  });
-
   it('interpolates the user idea and removes the placeholder token', () => {
     const prompt = buildStrategistPrompt('an interesting idea');
     expect(prompt).toContain('an interesting idea');

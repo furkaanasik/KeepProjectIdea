@@ -24,6 +24,10 @@ const validResult: AnalysisResult = {
     'You are a senior strategist. Follow these instructions to build the project described above. '.repeat(
       6,
     ),
+  vc_scores: { market_fit: 8, feasibility: 7, moat: 6, scalability: 9 },
+  pain_points: ['Truth one', 'Truth two', 'Truth three'],
+  revenue_model: 'S'.repeat(50),
+  decision: 'KEEP',
 };
 
 describe('POST /api/export/pdf', () => {
