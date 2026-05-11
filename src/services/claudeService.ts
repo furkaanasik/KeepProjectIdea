@@ -4,7 +4,7 @@ import {
 } from 'node:child_process';
 
 export interface SpawnFn {
-  (command: string, args: readonly string[]): ChildProcess;
+  (command: string, args: readonly string[], opts?: { stdin?: 'pipe' }): ChildProcess;
 }
 
 export interface RunClaudeOptions {
@@ -44,15 +44,17 @@ export async function runClaude({
 }: RunClaudeOptions): Promise<RunClaudeResult> {
   const bin = process.env.CLAUDE_BIN ?? 'claude';
   const spawnImpl: SpawnFn =
-    spawnFn ?? ((cmd, args) => nodeSpawn(cmd, [...args]));
+    spawnFn ?? ((cmd, args, opts) => nodeSpawn(cmd, [...args], { stdio: ['pipe', 'pipe', 'pipe'], ...opts }));
 
   return await new Promise<RunClaudeResult>((resolve, reject) => {
-    const child = spawnImpl(bin, [
-      '-p',
-      prompt,
-      '--output-format',
-      outputFormat,
-    ]);
+    const child = spawnImpl(bin, ['--output-format', outputFormat], { stdin: 'pipe' });
+
+    try {
+      child.stdin?.write(prompt, 'utf8');
+      child.stdin?.end();
+    } catch (writeErr) {
+      // stdin may not be writable if spawn failed; the error event will handle it
+    }
 
     let stdout = '';
     let stderr = '';

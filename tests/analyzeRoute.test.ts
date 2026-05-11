@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { AnalyzerValidationError } from '../src/services/analyzerService.js';
@@ -30,6 +30,10 @@ const validAnalysis: AnalysisResult = {
 };
 
 describe('POST /api/analyze', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('returns 200 with parsed result for a valid body and stubbed analyzer', async () => {
     const app = createApp({
       analyzeIdeaImpl: async (idea) => {
@@ -86,6 +90,41 @@ describe('POST /api/analyze', () => {
 
     expect(res.status).toBe(502);
     expect(res.body).toEqual({ error: 'analyzer_unavailable' });
+  });
+
+  it('logs ClaudeRunError details to console.error', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const runError = new ClaudeRunError('timed out', { exitCode: null, stderr: 'rate limited' });
+    const app = createApp({
+      analyzeIdeaImpl: async () => { throw runError; },
+    });
+
+    await request(app)
+      .post('/api/analyze')
+      .send({ idea: 'A meaningful project idea text' });
+
+    expect(spy).toHaveBeenCalledWith(
+      expect.stringContaining('[analyzer]'),
+      expect.stringContaining('timed out'),
+      expect.objectContaining({ stderr: 'rate limited' }),
+    );
+  });
+
+  it('logs AnalyzerValidationError details to console.error', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const app = createApp({
+      analyzeIdeaImpl: async () => { throw new AnalyzerValidationError('schema invalid'); },
+    });
+
+    await request(app)
+      .post('/api/analyze')
+      .send({ idea: 'A meaningful project idea text' });
+
+    expect(spy).toHaveBeenCalledWith(
+      expect.stringContaining('[analyzer]'),
+      expect.stringContaining('schema invalid'),
+      expect.anything(),
+    );
   });
 
   it('response includes vc_scores, pain_points, revenue_model, and decision fields', async () => {
