@@ -8,7 +8,7 @@ import {
   createAnalyzeRouter,
   type CreateAnalyzeRouterOptions,
 } from './routes/analyze.js';
-import { createAnalysesRouter, type RecalculateViabilityFn } from './routes/analyses.js';
+import { createAnalysesRouter, type RecalculateViabilityFn, type ReanalyzeIdeaFn } from './routes/analyses.js';
 import { createExportRouter } from './routes/export.js';
 import { createDevelopRouter, type DevelopIdeaFn } from './routes/develop.js';
 import type { AnalysesRepo } from './services/analysesRepo.js';
@@ -18,6 +18,7 @@ export interface CreateAppOptions extends CreateAnalyzeRouterOptions {
   analysesRepo?: AnalysesRepo;
   developIdeaImpl?: DevelopIdeaFn;
   recalculateViabilityImpl?: RecalculateViabilityFn;
+  reanalyzeIdeaImpl?: ReanalyzeIdeaFn;
 }
 
 export function createApp(options: CreateAppOptions = {}): Express {
@@ -47,6 +48,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
     createAnalysesRouter({
       analysesRepo: options.analysesRepo,
       recalculateViabilityImpl: options.recalculateViabilityImpl,
+      reanalyzeIdeaImpl: options.reanalyzeIdeaImpl,
     }),
   );
   app.use('/api/export', createExportRouter());
