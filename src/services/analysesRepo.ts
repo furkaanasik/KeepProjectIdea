@@ -13,6 +13,7 @@ export interface AnalysesRepo {
   listRecent(limit?: number): AnalysisRecord[];
   getById(id: number): AnalysisRecord | null;
   saveSuggestions(id: number, suggestions: DevelopmentSuggestion[]): boolean;
+  saveViability(id: number, viability: { score: number; status: string; reasoning: string }): boolean;
 }
 
 interface AnalysisRow {
@@ -64,6 +65,14 @@ export function createAnalysesRepo(db: DatabaseType): AnalysesRepo {
       if (!row) return false;
       const current = JSON.parse(row.result_json) as Record<string, unknown>;
       current['selected_suggestions'] = suggestions;
+      updateStmt.run(JSON.stringify(current), id);
+      return true;
+    },
+    saveViability(id, viability) {
+      const row = getByIdStmt.get(id) as AnalysisRow | undefined;
+      if (!row) return false;
+      const current = JSON.parse(row.result_json) as Record<string, unknown>;
+      current['viability'] = viability;
       updateStmt.run(JSON.stringify(current), id);
       return true;
     },
