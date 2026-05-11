@@ -1,9 +1,22 @@
 import { Router } from 'express';
 import { SaveSuggestionsInputSchema } from '../types/analysis.js';
 import type { AnalysesRepo } from '../services/analysesRepo.js';
+import {
+  recalculateViability,
+  type ViabilityResult,
+} from '../services/viabilityService.js';
+import { AnalyzerValidationError } from '../services/analyzerService.js';
+import { ClaudeRunError } from '../services/claudeService.js';
+
+export type RecalculateViabilityFn = (
+  idea: string,
+  analysis: unknown,
+  selectedSuggestions: unknown[],
+) => Promise<ViabilityResult>;
 
 export interface CreateAnalysesRouterOptions {
   analysesRepo?: AnalysesRepo;
+  recalculateViabilityImpl?: RecalculateViabilityFn;
 }
 
 export function createAnalysesRouter(
@@ -11,6 +24,10 @@ export function createAnalysesRouter(
 ): Router {
   const router = Router();
   const repo = options.analysesRepo;
+  const recalcImpl: RecalculateViabilityFn =
+    options.recalculateViabilityImpl ??
+    ((idea, analysis, suggestions) =>
+      recalculateViability(idea, analysis, suggestions as Parameters<typeof recalculateViability>[2], {}));
 
   router.get('/', (_req, res) => {
     if (!repo) {
@@ -46,6 +63,49 @@ export function createAnalysesRouter(
     }
 
     res.status(200).json({ ok: true });
+  });
+
+  router.post('/:id/recalculate', async (req, res, next) => {
+    if (!repo) {
+      res.status(503).json({ error: 'repo_unavailable' });
+      return;
+    }
+
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ error: 'invalid_id' });
+      return;
+    }
+
+    const record = repo.getById(id);
+    if (!record) {
+      res.status(404).json({ error: 'not_found' });
+      return;
+    }
+
+    const selectedSuggestions = record.result.selected_suggestions;
+    if (!selectedSuggestions || selectedSuggestions.length === 0) {
+      res.status(422).json({ error: 'no_selected_suggestions' });
+      return;
+    }
+
+    try {
+      const viability = await recalcImpl(record.idea, record.result, selectedSuggestions);
+      repo.saveViability(id, viability);
+      res.status(200).json({ viability });
+    } catch (err) {
+      if (err instanceof AnalyzerValidationError) {
+        console.error('[viability] validation error:', err.message, err.issues);
+        res.status(502).json({ error: 'viability_invalid_output' });
+        return;
+      }
+      if (err instanceof ClaudeRunError) {
+        console.error('[viability] claude run error:', err.message, err.details);
+        res.status(502).json({ error: 'viability_unavailable' });
+        return;
+      }
+      next(err);
+    }
   });
 
   return router;

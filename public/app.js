@@ -40,6 +40,42 @@ export async function saveSuggestions(id, suggestions, fetchImpl = fetch) {
   return { ok: res.ok };
 }
 
+export async function recalculateViability(id, fetchImpl = fetch) {
+  const res = await fetchImpl(`/api/analyses/${id}/recalculate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  let body = null;
+  try {
+    body = await res.json();
+  } catch {
+    body = null;
+  }
+  return { ok: res.ok, body };
+}
+
+export function updateViabilityDisplay(container, viability) {
+  const scoreEl = container.querySelector('[data-testid="viability-score"]');
+  const viabilitySection = container.querySelector('[data-section="viability"]');
+  const statusEl = container.querySelector('[data-testid="viability-status"]');
+  const barEl = viabilitySection ? viabilitySection.querySelector('.h-full.rounded-full') : null;
+  const reasoningEl = viabilitySection ? viabilitySection.querySelector('p.mt-3') : null;
+
+  const score = Number(viability.score) || 0;
+  const scorePct = Math.max(0, Math.min(100, score));
+
+  if (scoreEl) scoreEl.textContent = String(viability.score);
+  if (barEl) barEl.style.width = `${scorePct}%`;
+  if (statusEl) {
+    const dotSpan = document.createElement('span');
+    dotSpan.className = 'h-1.5 w-1.5 rounded-full bg-fuchsia-300';
+    statusEl.textContent = '';
+    statusEl.appendChild(dotSpan);
+    statusEl.append(` ${escapeHTML(viability.status)}`);
+  }
+  if (reasoningEl) reasoningEl.textContent = viability.reasoning;
+}
+
 const CATEGORY_LABELS = {
   feature: 'Özellik',
   tech_stack: 'Teknoloji',
@@ -56,7 +92,7 @@ const PRIORITY_STYLES = {
 };
 
 export function renderSuggestions(container, suggestions, opts = {}) {
-  const { onSave, analysisId } = opts;
+  const { onSave, analysisId, onAfterSave, onNewSuggestions } = opts;
   const items = suggestions
     .map(
       (s, i) => `
@@ -120,16 +156,38 @@ export function renderSuggestions(container, suggestions, opts = {}) {
       saveBtnEl.disabled = true;
       try {
         await onSave(selected);
+        saveBtnEl.classList.add('hidden');
         if (feedback) {
-          feedback.textContent = `${selected.length} öneri projeye eklendi.`;
+          feedback.textContent = `${selected.length} öneri eklendi. Viability skoru güncelleniyor…`;
           feedback.classList.remove('hidden');
+        }
+        if (onAfterSave) {
+          try {
+            await onAfterSave(selected);
+          } catch {
+            // viability recalc failure is non-fatal
+          }
+        }
+        if (feedback) {
+          feedback.textContent = `${selected.length} öneri projeye eklendi. Viability skoru güncellendi.`;
+        }
+        if (onNewSuggestions) {
+          const newSugBtn = document.createElement('button');
+          newSugBtn.type = 'button';
+          newSugBtn.dataset.testid = 'new-suggestions-btn';
+          newSugBtn.className =
+            'mt-2 inline-flex items-center gap-1.5 rounded-lg border border-fuchsia-400/40 bg-fuchsia-500/10 px-3 py-1.5 text-xs font-semibold text-fuchsia-200 transition hover:bg-fuchsia-500/20';
+          newSugBtn.textContent = 'Yeni Öneriler Al';
+          newSugBtn.addEventListener('click', () => {
+            onNewSuggestions();
+          });
+          feedback?.parentElement?.insertBefore(newSugBtn, feedback.nextSibling);
         }
       } catch {
         if (feedback) {
           feedback.textContent = 'Kaydetme başarısız oldu.';
           feedback.classList.remove('hidden');
         }
-      } finally {
         saveBtnEl.disabled = false;
       }
     });
@@ -328,6 +386,16 @@ export function renderResult(container, data, options = {}) {
             if (!analysisId) return;
             const { ok: saved } = await saveSuggestions(analysisId, selected);
             if (!saved) throw new Error('save failed');
+          },
+          onAfterSave: async () => {
+            if (!analysisId) return;
+            const { ok, body: recalcBody } = await recalculateViability(analysisId);
+            if (ok && recalcBody && recalcBody.viability) {
+              updateViabilityDisplay(container, recalcBody.viability);
+            }
+          },
+          onNewSuggestions: () => {
+            developBtn.click();
           },
         });
       } catch {

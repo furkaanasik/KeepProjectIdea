@@ -8,7 +8,7 @@ import {
   createAnalyzeRouter,
   type CreateAnalyzeRouterOptions,
 } from './routes/analyze.js';
-import { createAnalysesRouter } from './routes/analyses.js';
+import { createAnalysesRouter, type RecalculateViabilityFn } from './routes/analyses.js';
 import { createExportRouter } from './routes/export.js';
 import { createDevelopRouter, type DevelopIdeaFn } from './routes/develop.js';
 import type { AnalysesRepo } from './services/analysesRepo.js';
@@ -17,6 +17,7 @@ import { createAnalyzeLimiter } from './middleware/rateLimit.js';
 export interface CreateAppOptions extends CreateAnalyzeRouterOptions {
   analysesRepo?: AnalysesRepo;
   developIdeaImpl?: DevelopIdeaFn;
+  recalculateViabilityImpl?: RecalculateViabilityFn;
 }
 
 export function createApp(options: CreateAppOptions = {}): Express {
@@ -43,7 +44,10 @@ export function createApp(options: CreateAppOptions = {}): Express {
   );
   app.use(
     '/api/analyses',
-    createAnalysesRouter({ analysesRepo: options.analysesRepo }),
+    createAnalysesRouter({
+      analysesRepo: options.analysesRepo,
+      recalculateViabilityImpl: options.recalculateViabilityImpl,
+    }),
   );
   app.use('/api/export', createExportRouter());
   app.use('/api/develop', createDevelopRouter({ developIdeaImpl: options.developIdeaImpl }));
