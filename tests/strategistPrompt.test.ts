@@ -74,6 +74,31 @@ describe('buildStrategistPrompt', () => {
     expect(result).toContain('"revenue_model_critique"');
   });
 
+  it('contains new JSON key: vc_scores', () => {
+    expect(result).toContain('"vc_scores"');
+  });
+
+  it('contains new JSON key: pain_points', () => {
+    expect(result).toContain('"pain_points"');
+  });
+
+  it('contains new JSON key: revenue_model', () => {
+    expect(result).toContain('"revenue_model"');
+  });
+
+  it('contains new JSON key: decision', () => {
+    expect(result).toContain('"decision"');
+  });
+
+  it('contains moat anchoring instruction', () => {
+    expect(result).toContain('moat MUTLAKA ≤ 4');
+  });
+
+  it('names Supercook and Epicurious as moat anchor examples', () => {
+    expect(result).toContain('Supercook');
+    expect(result).toContain('Epicurious');
+  });
+
   it('escapes backticks in idea', () => {
     const r = buildStrategistPrompt('idea with `backtick`');
     expect(r).toContain('idea with \\`backtick\\`');
