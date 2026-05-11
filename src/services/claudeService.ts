@@ -39,9 +39,12 @@ export class ClaudeRunError extends Error {
 export async function runClaude({
   prompt,
   outputFormat = 'json',
-  timeoutMs = 120_000,
+  timeoutMs,
   spawnFn,
 }: RunClaudeOptions): Promise<RunClaudeResult> {
+  const effectiveTimeout =
+    timeoutMs ??
+    (parseInt(process.env['CLAUDE_TIMEOUT_MS'] ?? '', 10) || 300_000);
   const bin = process.env.CLAUDE_BIN ?? 'claude';
   const spawnImpl: SpawnFn =
     spawnFn ?? ((cmd, args, opts) => nodeSpawn(cmd, [...args], { stdio: ['pipe', 'pipe', 'pipe'], ...opts }));
@@ -75,13 +78,13 @@ export async function runClaude({
       }
       finalize(() =>
         reject(
-          new ClaudeRunError(`claude timed out after ${timeoutMs}ms`, {
+          new ClaudeRunError(`claude timed out after ${effectiveTimeout}ms`, {
             stderr,
             stdout,
           }),
         ),
       );
-    }, timeoutMs);
+    }, effectiveTimeout);
 
     child.stdout?.on('data', (chunk: Buffer | string) => {
       stdout += chunk.toString();
