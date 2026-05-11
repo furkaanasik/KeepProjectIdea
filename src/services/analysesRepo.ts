@@ -14,6 +14,7 @@ export interface AnalysesRepo {
   getById(id: number): AnalysisRecord | null;
   saveSuggestions(id: number, suggestions: DevelopmentSuggestion[]): boolean;
   saveViability(id: number, viability: { score: number; status: string; reasoning: string }): boolean;
+  saveFullResult(id: number, result: AnalysisResult): boolean;
 }
 
 interface AnalysisRow {
@@ -74,6 +75,15 @@ export function createAnalysesRepo(db: DatabaseType): AnalysesRepo {
       const current = JSON.parse(row.result_json) as Record<string, unknown>;
       current['viability'] = viability;
       updateStmt.run(JSON.stringify(current), id);
+      return true;
+    },
+    saveFullResult(id, result) {
+      const row = getByIdStmt.get(id) as AnalysisRow | undefined;
+      if (!row) return false;
+      const current = JSON.parse(row.result_json) as Record<string, unknown>;
+      const selectedSuggestions = current['selected_suggestions'];
+      const merged = { ...result, selected_suggestions: selectedSuggestions };
+      updateStmt.run(JSON.stringify(merged), id);
       return true;
     },
   };
