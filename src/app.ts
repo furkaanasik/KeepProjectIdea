@@ -10,11 +10,13 @@ import {
 } from './routes/analyze.js';
 import { createAnalysesRouter } from './routes/analyses.js';
 import { createExportRouter } from './routes/export.js';
+import { createDevelopRouter, type DevelopIdeaFn } from './routes/develop.js';
 import type { AnalysesRepo } from './services/analysesRepo.js';
 import { createAnalyzeLimiter } from './middleware/rateLimit.js';
 
 export interface CreateAppOptions extends CreateAnalyzeRouterOptions {
   analysesRepo?: AnalysesRepo;
+  developIdeaImpl?: DevelopIdeaFn;
 }
 
 export function createApp(options: CreateAppOptions = {}): Express {
@@ -44,6 +46,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
     createAnalysesRouter({ analysesRepo: options.analysesRepo }),
   );
   app.use('/api/export', createExportRouter());
+  app.use('/api/develop', createDevelopRouter({ developIdeaImpl: options.developIdeaImpl }));
 
   app.use(
     (err: unknown, _req: Request, res: Response, _next: NextFunction) => {

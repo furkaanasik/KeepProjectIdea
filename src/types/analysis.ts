@@ -54,3 +54,22 @@ export const ProjectIdeaInputSchema = z
   .strict();
 
 export type ProjectIdeaInput = z.infer<typeof ProjectIdeaInputSchema>;
+
+export const DevelopmentSuggestionSchema = z.object({
+  id: z.string(),
+  category: z.enum(['feature', 'tech_stack', 'mvp', 'monetization', 'growth', 'ux']),
+  title: z.string().min(3),
+  description: z.string().min(10),
+  priority: z.enum(['high', 'medium', 'low']),
+});
+
+export const DevelopmentPlanSchema = z.object({
+  suggestions: z.array(DevelopmentSuggestionSchema).min(4).max(15),
+});
+
+export const SaveSuggestionsInputSchema = z.object({
+  suggestions: z.array(DevelopmentSuggestionSchema),
+});
+
+export type DevelopmentSuggestion = z.infer<typeof DevelopmentSuggestionSchema>;
+export type DevelopmentPlan = z.infer<typeof DevelopmentPlanSchema>;

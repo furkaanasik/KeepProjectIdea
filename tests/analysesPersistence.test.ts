@@ -107,6 +107,8 @@ describe('analyses persistence + GET /api/analyses', () => {
         throw new Error('disk full');
       },
       listRecent: () => [],
+      getById: () => null,
+      saveSuggestions: () => false,
     };
 
     const app = createApp({
