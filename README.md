@@ -36,7 +36,7 @@ npm install
 npm run dev
 ```
 
-Server listens on `http://localhost:3000` by default. Open `/` for the frontend.
+Server listens on `http://localhost:3003` by default. Open `/` for the frontend.
 
 ## Scripts
 
@@ -53,7 +53,7 @@ All configuration is via environment variables.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `PORT` | `3000` | HTTP listen port. |
+| `PORT` | `3003` | HTTP listen port. |
 | `CLAUDE_BIN` | `claude` | Path/name of the `claude` CLI binary. |
 | `ANALYZE_RATE_MAX` | `5` | Max `/api/analyze` requests per IP per minute. |
 | `DB_PATH` | `./data/app.db` | SQLite database path. Use `:memory:` for an ephemeral DB. |
