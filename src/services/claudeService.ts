@@ -10,7 +10,6 @@ export interface SpawnFn {
 export interface RunClaudeOptions {
   prompt: string;
   outputFormat?: string;
-  timeoutMs?: number;
   spawnFn?: SpawnFn;
 }
 
@@ -39,12 +38,8 @@ export class ClaudeRunError extends Error {
 export async function runClaude({
   prompt,
   outputFormat = 'json',
-  timeoutMs,
   spawnFn,
 }: RunClaudeOptions): Promise<RunClaudeResult> {
-  const effectiveTimeout =
-    timeoutMs ??
-    (parseInt(process.env['CLAUDE_TIMEOUT_MS'] ?? '', 10) || 300_000);
   const bin = process.env.CLAUDE_BIN ?? 'claude';
   const spawnImpl: SpawnFn =
     spawnFn ?? ((cmd, args, opts) => nodeSpawn(cmd, [...args], { stdio: ['pipe', 'pipe', 'pipe'], ...opts }));
@@ -66,25 +61,8 @@ export async function runClaude({
     const finalize = (fn: () => void): void => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
       fn();
     };
-
-    const timer = setTimeout(() => {
-      try {
-        child.kill('SIGKILL');
-      } catch {
-        // ignore kill errors; we are already failing
-      }
-      finalize(() =>
-        reject(
-          new ClaudeRunError(`claude timed out after ${effectiveTimeout}ms`, {
-            stderr,
-            stdout,
-          }),
-        ),
-      );
-    }, effectiveTimeout);
 
     child.stdout?.on('data', (chunk: Buffer | string) => {
       stdout += chunk.toString();
