@@ -273,4 +273,191 @@ describe('wireForm — form submission flow', () => {
     expect(errorEl.classList.contains('hidden')).toBe(false);
     expect(errorEl.textContent).toBe('analyzer_unavailable');
   });
+
+  it('existing results stay visible while new analysis is loading', async () => {
+    let resolveSubmit!: (v: unknown) => void;
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url === '/api/analyses') {
+        return Promise.resolve({ ok: true, json: async () => [] });
+      }
+      return new Promise((resolve) => {
+        resolveSubmit = resolve;
+      });
+    });
+    (globalThis as any).fetch = fetchMock;
+
+    wireForm(document);
+
+    const textarea = document.getElementById('idea') as HTMLTextAreaElement;
+    const form = document.getElementById('analyze-form') as HTMLFormElement;
+    const results = document.getElementById('results') as HTMLElement;
+
+    results.innerHTML = '<p id="old-result">Old content</p>';
+    textarea.value = 'A meaningful project idea text';
+    form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+
+    await new Promise((r) => setTimeout(r, 0));
+    expect(document.getElementById('old-result')).not.toBeNull();
+
+    resolveSubmit({ ok: true, status: 200, json: async () => sampleResult });
+    await new Promise((r) => setTimeout(r, 5));
+
+    expect(document.getElementById('old-result')).toBeNull();
+    expect(results.querySelectorAll('section[data-section]').length).toBe(6);
+  });
+
+  it('existing results stay visible when new analysis fails', async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url === '/api/analyses') {
+        return Promise.resolve({ ok: true, json: async () => [] });
+      }
+      return Promise.resolve({
+        ok: false,
+        status: 502,
+        json: async () => ({ error: 'analyzer_unavailable' }),
+      });
+    });
+    (globalThis as any).fetch = fetchMock;
+
+    wireForm(document);
+
+    const textarea = document.getElementById('idea') as HTMLTextAreaElement;
+    const form = document.getElementById('analyze-form') as HTMLFormElement;
+    const results = document.getElementById('results') as HTMLElement;
+    const errorEl = document.getElementById('error') as HTMLElement;
+
+    results.innerHTML = '<p id="old-result">Old content</p>';
+    textarea.value = 'A meaningful project idea text';
+    form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+
+    await new Promise((r) => setTimeout(r, 5));
+
+    expect(document.getElementById('old-result')).not.toBeNull();
+    expect(errorEl.classList.contains('hidden')).toBe(false);
+    expect(errorEl.textContent).toContain('analyzer_unavailable');
+  });
+});
+
+describe('wireForm — auto-render on page load', () => {
+  function setupDOMWithRecent() {
+    document.body.innerHTML = `
+      <form id="analyze-form">
+        <textarea id="idea" name="idea" maxlength="6000"></textarea>
+        <button id="submit-btn" type="submit">Analyze</button>
+      </form>
+      <div id="status" class="loading hidden"></div>
+      <div id="error" class="error hidden"></div>
+      <div id="results"></div>
+      <ul id="recent-list"></ul>
+      <div id="recent-empty" class="hidden"></div>
+    `;
+  }
+
+  it('auto-renders most recent analysis on page load when results is empty', async () => {
+    const recentRecord = {
+      id: 42,
+      created_at: '2026-05-12T00:00:00.000Z',
+      idea: 'My saved idea text',
+      result: sampleResult,
+    };
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [recentRecord],
+    });
+    (globalThis as any).fetch = fetchMock;
+
+    setupDOMWithRecent();
+    wireForm(document);
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    const results = document.getElementById('results') as HTMLElement;
+    expect(results.querySelectorAll('section[data-section]').length).toBe(6);
+    expect(results.textContent).toContain(sampleResult.project_summary);
+  });
+
+  it('does NOT auto-render when results already has content', async () => {
+    const recentRecord = {
+      id: 42,
+      created_at: '2026-05-12T00:00:00.000Z',
+      idea: 'My saved idea text',
+      result: sampleResult,
+    };
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [recentRecord],
+    });
+    (globalThis as any).fetch = fetchMock;
+
+    setupDOMWithRecent();
+    const results = document.getElementById('results') as HTMLElement;
+    results.innerHTML = '<p id="existing">Existing content</p>';
+
+    wireForm(document);
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(document.getElementById('existing')).not.toBeNull();
+  });
+
+  it('does NOT auto-render when recent list is empty', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [],
+    });
+    (globalThis as any).fetch = fetchMock;
+
+    setupDOMWithRecent();
+    wireForm(document);
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    const results = document.getElementById('results') as HTMLElement;
+    expect(results.innerHTML.trim()).toBe('');
+  });
+
+  it('does NOT auto-render when submit is in progress', async () => {
+    const recentRecord = {
+      id: 42,
+      created_at: '2026-05-12T00:00:00.000Z',
+      idea: 'My saved idea text',
+      result: sampleResult,
+    };
+
+    let resolveSubmit!: (v: unknown) => void;
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url === '/api/analyses') {
+        return new Promise((resolve) =>
+          setTimeout(() =>
+            resolve({ ok: true, json: async () => [recentRecord] }),
+            0,
+          ),
+        );
+      }
+      return new Promise((resolve) => {
+        resolveSubmit = resolve;
+      });
+    });
+    (globalThis as any).fetch = fetchMock;
+
+    setupDOMWithRecent();
+    wireForm(document);
+
+    const textarea = document.getElementById('idea') as HTMLTextAreaElement;
+    const form = document.getElementById('analyze-form') as HTMLFormElement;
+    textarea.value = 'A meaningful project idea text';
+    form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    const results = document.getElementById('results') as HTMLElement;
+    expect(results.innerHTML.trim()).toBe('');
+
+    resolveSubmit({ ok: true, status: 200, json: async () => sampleResult });
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(results.querySelectorAll('section[data-section]').length).toBe(6);
+  });
 });
