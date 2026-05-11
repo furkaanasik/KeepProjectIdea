@@ -555,21 +555,24 @@ export function wireForm(doc) {
     return;
   }
 
-  const refreshRecent = async () => {
+  const refreshRecent = async ({ autoRender = false } = {}) => {
     if (!recentList) return;
     const records = await fetchRecentAnalyses();
     renderRecentList(recentList, recentEmpty, records, (record) => {
       clearError(errorBox);
       renderResult(results, record.result, { idea: record.idea, analysisId: record.id });
     });
+    if (autoRender && !submitBtn.disabled && records.length > 0 && !results.innerHTML.trim()) {
+      const latest = records[0];
+      renderResult(results, latest.result, { idea: latest.idea, analysisId: latest.id });
+    }
   };
 
-  void refreshRecent();
+  void refreshRecent({ autoRender: true });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     clearError(errorBox);
-    results.innerHTML = '';
     submitBtn.disabled = true;
     status.classList.remove('hidden');
 
@@ -581,6 +584,7 @@ export function wireForm(doc) {
         return;
       }
       const { id: analysisId, created_at, ...result } = body ?? {};
+      results.innerHTML = '';
       renderResult(results, result, { idea, analysisId: analysisId ?? null });
       void refreshRecent();
     } catch (err) {
