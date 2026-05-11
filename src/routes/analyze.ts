@@ -37,14 +37,18 @@ export function createAnalyzeRouter(
 
     try {
       const result = await impl(parsed.data.idea);
+      let insertResult: { id: number; created_at: string } | null = null;
       if (repo) {
         try {
-          repo.insert(parsed.data.idea, result);
+          insertResult = repo.insert(parsed.data.idea, result);
         } catch (err) {
           console.error('failed to persist analysis:', err);
         }
       }
-      res.status(200).json(result);
+      const body = insertResult
+        ? { id: insertResult.id, created_at: insertResult.created_at, ...result }
+        : result;
+      res.status(200).json(body);
     } catch (err) {
       if (err instanceof AnalyzerValidationError) {
         console.error('[analyzer] validation error:', err.message, err.issues);

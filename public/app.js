@@ -16,8 +16,129 @@ const CARD_LABEL =
 const CARD_DOT =
   '<span class="inline-block h-1.5 w-1.5 rounded-full bg-gradient-to-r from-violet-400 to-fuchsia-400"></span>';
 
+export async function developIdea(idea, analysis, fetchImpl = fetch) {
+  const res = await fetchImpl('/api/develop', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ idea, analysis }),
+  });
+  let body = null;
+  try {
+    body = await res.json();
+  } catch {
+    body = null;
+  }
+  return { ok: res.ok, status: res.status, body };
+}
+
+export async function saveSuggestions(id, suggestions, fetchImpl = fetch) {
+  const res = await fetchImpl(`/api/analyses/${id}/suggestions`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ suggestions }),
+  });
+  return { ok: res.ok };
+}
+
+const CATEGORY_LABELS = {
+  feature: 'Özellik',
+  tech_stack: 'Teknoloji',
+  mvp: 'MVP',
+  monetization: 'Gelirleştirme',
+  growth: 'Büyüme',
+  ux: 'UX',
+};
+
+const PRIORITY_STYLES = {
+  high: 'border-rose-400/40 bg-rose-500/10 text-rose-200',
+  medium: 'border-amber-400/40 bg-amber-500/10 text-amber-200',
+  low: 'border-zinc-400/30 bg-zinc-500/10 text-zinc-400',
+};
+
+export function renderSuggestions(container, suggestions, opts = {}) {
+  const { onSave, analysisId } = opts;
+  const items = suggestions
+    .map(
+      (s, i) => `
+      <li class="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 transition hover:border-fuchsia-400/30 hover:bg-white/[0.05]">
+        <input
+          type="checkbox"
+          id="sug-${i}"
+          data-sug-idx="${i}"
+          class="mt-1 h-4 w-4 flex-none cursor-pointer rounded border-white/20 accent-fuchsia-500"
+        />
+        <label for="sug-${i}" class="flex flex-1 cursor-pointer flex-col gap-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-sm font-semibold text-zinc-100">${escapeHTML(s.title)}</span>
+            <span class="rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase ${PRIORITY_STYLES[s.priority] || PRIORITY_STYLES['low']}">${escapeHTML(s.priority)}</span>
+            <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-zinc-400">${escapeHTML(CATEGORY_LABELS[s.category] || s.category)}</span>
+          </div>
+          <p class="text-sm leading-relaxed text-zinc-300">${escapeHTML(s.description)}</p>
+        </label>
+      </li>`,
+    )
+    .join('');
+
+  const saveBtn = analysisId
+    ? `<button
+        type="button"
+        data-testid="save-suggestions-btn"
+        class="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-400 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-fuchsia-500/25 transition hover:saturate-150 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Seçilenleri Projeye Ekle
+      </button>`
+    : '';
+
+  container.innerHTML = `
+    <section class="${CARD_BASE} md:col-span-6" data-section="suggestions">
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 class="${CARD_LABEL}">${CARD_DOT} Geliştirme Önerileri</h2>
+        ${saveBtn}
+      </div>
+      <p class="mb-3 text-xs text-zinc-500">Projeye eklemek istediğin önerileri seç, ardından kaydet.</p>
+      <ul class="space-y-2" data-testid="suggestions-list">${items}</ul>
+      <p data-testid="save-feedback" class="mt-3 hidden text-xs text-emerald-300"></p>
+    </section>
+  `;
+
+  const saveBtnEl = container.querySelector('[data-testid="save-suggestions-btn"]');
+  const feedback = container.querySelector('[data-testid="save-feedback"]');
+  if (saveBtnEl && onSave) {
+    saveBtnEl.addEventListener('click', async () => {
+      const checked = container.querySelectorAll('input[data-sug-idx]:checked');
+      const selected = Array.from(checked).map(
+        (cb) => suggestions[Number(cb.dataset.sugIdx)],
+      );
+      if (selected.length === 0) {
+        if (feedback) {
+          feedback.textContent = 'En az bir öneri seç.';
+          feedback.classList.remove('hidden');
+        }
+        return;
+      }
+      saveBtnEl.disabled = true;
+      try {
+        await onSave(selected);
+        if (feedback) {
+          feedback.textContent = `${selected.length} öneri projeye eklendi.`;
+          feedback.classList.remove('hidden');
+        }
+      } catch {
+        if (feedback) {
+          feedback.textContent = 'Kaydetme başarısız oldu.';
+          feedback.classList.remove('hidden');
+        }
+      } finally {
+        saveBtnEl.disabled = false;
+      }
+    });
+  }
+}
+
 export function renderResult(container, data, options = {}) {
   const idea = typeof options.idea === 'string' ? options.idea : '';
+  const analysisId = options.analysisId ?? null;
   const competitorsRows = data.competitors
     .map(
       (c) => `
@@ -43,7 +164,18 @@ export function renderResult(container, data, options = {}) {
   const scorePct = Math.max(0, Math.min(100, score));
 
   container.innerHTML = `
-    <div class="mb-3 flex items-center justify-end gap-2">
+    <div class="mb-3 flex items-center justify-end gap-2 flex-wrap">
+      <button
+        type="button"
+        data-testid="develop-btn"
+        class="group/dev relative inline-flex items-center gap-1.5 overflow-hidden rounded-lg bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-400 px-3 py-1.5 text-xs font-semibold text-white shadow-md shadow-fuchsia-500/20 transition hover:shadow-fuchsia-500/40 hover:saturate-150 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <span class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover/dev:translate-x-full"></span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="relative h-3.5 w-3.5" aria-hidden="true">
+          <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+        </svg>
+        <span class="relative" data-testid="develop-btn-label">Bu Fikri AI ile Geliştir</span>
+      </button>
       <button
         type="button"
         data-testid="export-pdf-btn"
@@ -58,6 +190,8 @@ export function renderResult(container, data, options = {}) {
         <span data-testid="export-pdf-label">Export PDF</span>
       </button>
     </div>
+    <div data-testid="develop-error" class="hidden mb-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-200"></div>
+    <div data-testid="suggestions-container"></div>
     <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mt-2 grid-flow-row-dense">
       <section data-section="summary" class="${CARD_BASE} md:col-span-4">
         <h2 class="${CARD_LABEL}">${CARD_DOT} Project Summary</h2>
@@ -163,6 +297,47 @@ export function renderResult(container, data, options = {}) {
           if (exportLabel && previous !== null)
             exportLabel.textContent = previous;
         }, 1500);
+      }
+    });
+  }
+
+  const developBtn = container.querySelector('[data-testid="develop-btn"]');
+  const developBtnLabel = container.querySelector('[data-testid="develop-btn-label"]');
+  const developError = container.querySelector('[data-testid="develop-error"]');
+  const suggestionsContainer = container.querySelector('[data-testid="suggestions-container"]');
+
+  if (developBtn && suggestionsContainer) {
+    developBtn.addEventListener('click', async () => {
+      developBtn.disabled = true;
+      if (developBtnLabel) developBtnLabel.textContent = 'Geliştiriliyor…';
+      if (developError) developError.classList.add('hidden');
+      suggestionsContainer.innerHTML = '';
+
+      try {
+        const { ok, body } = await developIdea(idea, data);
+        if (!ok || !body || !Array.isArray(body.suggestions)) {
+          if (developError) {
+            developError.textContent = body?.error ?? 'Öneri alınamadı, tekrar dene.';
+            developError.classList.remove('hidden');
+          }
+          return;
+        }
+        renderSuggestions(suggestionsContainer, body.suggestions, {
+          analysisId,
+          onSave: async (selected) => {
+            if (!analysisId) return;
+            const { ok: saved } = await saveSuggestions(analysisId, selected);
+            if (!saved) throw new Error('save failed');
+          },
+        });
+      } catch {
+        if (developError) {
+          developError.textContent = 'Bağlantı hatası, tekrar dene.';
+          developError.classList.remove('hidden');
+        }
+      } finally {
+        developBtn.disabled = false;
+        if (developBtnLabel) developBtnLabel.textContent = 'Bu Fikri AI ile Geliştir';
       }
     });
   }
@@ -317,7 +492,7 @@ export function wireForm(doc) {
     const records = await fetchRecentAnalyses();
     renderRecentList(recentList, recentEmpty, records, (record) => {
       clearError(errorBox);
-      renderResult(results, record.result, { idea: record.idea });
+      renderResult(results, record.result, { idea: record.idea, analysisId: record.id });
     });
   };
 
@@ -337,7 +512,8 @@ export function wireForm(doc) {
         renderError(errorBox, extractErrorMessage(body));
         return;
       }
-      renderResult(results, body, { idea });
+      const { id: analysisId, created_at, ...result } = body ?? {};
+      renderResult(results, result, { idea, analysisId: analysisId ?? null });
       void refreshRecent();
     } catch (err) {
       renderError(errorBox, err instanceof Error ? err.message : 'Network error');
