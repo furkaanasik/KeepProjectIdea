@@ -47,10 +47,12 @@ export function createAnalyzeRouter(
       res.status(200).json(result);
     } catch (err) {
       if (err instanceof AnalyzerValidationError) {
+        console.error('[analyzer] validation error:', err.message, err.issues);
         res.status(502).json({ error: 'analyzer_invalid_output' });
         return;
       }
       if (err instanceof ClaudeRunError) {
+        console.error('[analyzer] claude run error:', err.message, err.details);
         res.status(502).json({ error: 'analyzer_unavailable' });
         return;
       }

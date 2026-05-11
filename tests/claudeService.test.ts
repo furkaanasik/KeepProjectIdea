@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { EventEmitter } from 'node:events';
 import type { ChildProcess } from 'node:child_process';
 import {
@@ -19,6 +19,7 @@ interface FakeChildOptions {
 interface FakeChild extends EventEmitter {
   stdout: EventEmitter;
   stderr: EventEmitter;
+  stdin: { write: ReturnType<typeof vi.fn>; end: ReturnType<typeof vi.fn> };
   killed: boolean;
   kill(signal?: string): boolean;
 }
@@ -27,6 +28,7 @@ function makeFakeChild(opts: FakeChildOptions): FakeChild {
   const child = new EventEmitter() as FakeChild;
   child.stdout = new EventEmitter();
   child.stderr = new EventEmitter();
+  child.stdin = { write: vi.fn(), end: vi.fn() };
   child.killed = false;
   child.kill = (_signal?: string): boolean => {
     child.killed = true;
@@ -82,7 +84,7 @@ describe('runClaude', () => {
     expect(out.raw).toEqual(envelope);
   });
 
-  it('passes the expected CLI arguments to spawn', async () => {
+  it('passes the expected CLI arguments to spawn (no -p flag)', async () => {
     const calls: Array<{ cmd: string; args: readonly string[] }> = [];
     const spawnFn: SpawnFn = ((cmd: string, args: readonly string[]) => {
       calls.push({ cmd, args });
@@ -95,12 +97,24 @@ describe('runClaude', () => {
     await runClaude({ prompt: 'hello', spawnFn });
 
     expect(calls).toHaveLength(1);
-    expect(calls[0]!.args).toEqual([
-      '-p',
-      'hello',
-      '--output-format',
-      'json',
-    ]);
+    expect(calls[0]!.args).toEqual(['--output-format', 'json']);
+    expect(calls[0]!.args).not.toContain('-p');
+  });
+
+  it('writes the prompt to stdin and closes it', async () => {
+    let capturedChild: FakeChild | undefined;
+    const spawnFn: SpawnFn = ((cmd: string, args: readonly string[]) => {
+      capturedChild = makeFakeChild({
+        stdout: JSON.stringify({ result: 'ok' }),
+        exitCode: 0,
+      });
+      return capturedChild as unknown as ChildProcess;
+    }) as SpawnFn;
+
+    await runClaude({ prompt: 'my long prompt here', spawnFn });
+
+    expect(capturedChild?.stdin.write).toHaveBeenCalledWith('my long prompt here', 'utf8');
+    expect(capturedChild?.stdin.end).toHaveBeenCalled();
   });
 
   it('throws ClaudeRunError on non-zero exit code with stderr captured', async () => {
