@@ -58,20 +58,20 @@ describe('buildStrategistPrompt', () => {
     expect(result).toContain('"master_prompt"');
   });
 
-  it('contains new JSON key: market_scan', () => {
-    expect(result).toContain('"market_scan"');
+  it('does NOT contain removed JSON key market_scan', () => {
+    expect(result).not.toContain('"market_scan"');
   });
 
-  it('contains new JSON key: technical_barriers', () => {
-    expect(result).toContain('"technical_barriers"');
+  it('does NOT contain removed JSON key technical_barriers', () => {
+    expect(result).not.toContain('"technical_barriers"');
   });
 
-  it('contains new JSON key: target_audience_challenge', () => {
-    expect(result).toContain('"target_audience_challenge"');
+  it('does NOT contain removed JSON key target_audience_challenge', () => {
+    expect(result).not.toContain('"target_audience_challenge"');
   });
 
-  it('contains new JSON key: revenue_model_critique', () => {
-    expect(result).toContain('"revenue_model_critique"');
+  it('does NOT contain removed JSON key revenue_model_critique', () => {
+    expect(result).not.toContain('"revenue_model_critique"');
   });
 
   it('contains new JSON key: vc_scores', () => {

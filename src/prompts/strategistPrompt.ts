@@ -23,37 +23,20 @@ Aşağıdaki 9 adımı gerçekleştir ve sonucu SADECE belirtilen JSON formatın
    - scalability: Dünya genelinde büyüme ve ölçeklenme potansiyeli.
 9. Master Prompt: Bu projeyi geliştirecek, kodlayacak veya tüm detaylarını kurgulayacak başka bir AI modeline (Claude/GPT-4) verilecek; içinde tüm bu analizleri, teknik gereksinimleri ve vizyonu barındıran profesyonel bir "Sistem Promptu" hazırla.
 
-ÇIKTI FORMATI (SADECE JSON):
+ÇIKTI FORMATI (SADECE JSON — bu yapıya TAM OLARAK uy, fazladan alan ekleme):
 {
-  "project_summary": "Projenin kısa ve öz tanımı",
+  "project_summary": "Projenin kısa ve öz tanımı; pazar büyüklüğü, büyüme hızı, yatırımcı ilgisi ve teknik giriş bariyerleri buraya entegre edilmeli",
   "competitors": [
     { "name": "Rakip Adı (gerçek şirket)", "key_features": "Öne çıkan özellikleri", "weakness": "Kullanıcıların bulamadığı eksiklik" }
   ],
   "market_analysis": {
-    "trends": "Pazar trendleri ve büyüme verileri",
-    "target_audience": "Hedef kitle tanımı"
-  },
-  "market_scan": {
-    "market_size": "Pazar büyüklüğü ve büyüme hızı",
-    "investor_interest": "Son 2 yılda yatırımcı ilgisi"
-  },
-  "technical_barriers": {
-    "exists": true,
-    "description": "Teknik giriş bariyerleri veya yokluğu"
-  },
-  "target_audience_challenge": {
-    "willingness_to_pay": "Ödeme isteği analizi",
-    "alternatives_used": "Şu an kullandıkları alternatifler",
-    "switch_reason": "Geçiş yapma nedeni"
-  },
-  "revenue_model_critique": {
-    "recommended_model": "Önerilen gelir modeli",
-    "reasoning": "Neden bu model bu pazar için mantıklı"
+    "trends": "Pazar trendleri, büyüme verileri, yatırımcı ilgisi ve teknik bariyerlerin özeti",
+    "target_audience": "Hedef kitle tanımı; ödeme isteği, kullandıkları alternatifler ve geçiş nedeni dahil"
   },
   "viability": {
     "score": 50,
     "status": "Yapmaya Değer / Riskli",
-    "reasoning": "Neden bu puan verildi?"
+    "reasoning": "Neden bu puan verildi? Gelir modeli eleştirisi de buraya dahil edilmeli."
   },
   "differentiation_points": [
     "Farklılaştırıcı özellik 1",
@@ -71,10 +54,12 @@ Aşağıdaki 9 adımı gerçekleştir ve sonucu SADECE belirtilen JSON formatın
     "Kullanıcıların yaşadığı spesifik, ölçülebilir acı nokta 2 (genel değil, somut olmalı)",
     "Kullanıcıların yaşadığı spesifik, ölçülebilir acı nokta 3 (genel değil, somut olmalı)"
   ],
-  "revenue_model": "Gelir modeli ve monetizasyon stratejisinin detaylı açıklaması; fiyatlandırma, müşteri segmenti ve neden bu modelin işe yarayacağına dair gerekçe",
+  "revenue_model": "Gelir modeli ve monetizasyon stratejisinin detaylı açıklaması; SaaS/komisyon/reklam seçenekleri karşılaştırması, fiyatlandırma, müşteri segmenti ve neden bu modelin işe yarayacağına dair gerekçe",
   "decision": "KEEP veya DROP — vc_scores ortalaması >= 7 ise KEEP, değilse DROP",
   "master_prompt": "Buraya diğer AI için hazırlanan devasa sistem promptu gelecek"
-}`;
+}
+
+KRİTİK KURAL: Yukarıdaki JSON yapısına birebir uy. "competitors" içindeki her nesne YALNIZCA "name", "key_features" ve "weakness" alanlarını içermeli — başka hiçbir alan (investment, funding, vb.) ekleme. Üst seviyede de yalnızca belirtilen 10 alan olmalı: project_summary, competitors, market_analysis, viability, differentiation_points, vc_scores, pain_points, revenue_model, decision, master_prompt.`;
 
 function escapeIdea(idea: string): string {
   return idea
